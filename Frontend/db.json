@@ -1,0 +1,25 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Casual T-Shirt",
+      "price": 15.99,
+      "category": "clothes",
+      "image": "/images/tshirt.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Red Lipstick",
+      "price": 9.99,
+      "category": "cosmetics",
+      "image": "/images/lipstick.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Smartphone",
+      "price": 299.99,
+      "category": "electronics",
+      "image": "/images/phone.jpg"
+    }
+  ]
+}
