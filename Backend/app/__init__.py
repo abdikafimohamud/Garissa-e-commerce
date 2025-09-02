@@ -2,18 +2,20 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
-import os
+from flask_mail import Mail
 
 db = SQLAlchemy()
 migrate = Migrate()
+mail = Mail()   # ✅ Initialize Flask-Mail
 
 def create_app():
     app = Flask(__name__)
 
-# Correct CORS setup
+    # ===== Correct CORS setup =====
     CORS(app, supports_credentials=True, origins=[
-    "http://localhost:5173", "http://127.0.0.1:5173"
-])
+        "http://localhost:5173", "http://127.0.0.1:5173"
+    ])
+
     # ===== Database Config =====
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///garissa.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -30,10 +32,18 @@ def create_app():
         "SESSION_COOKIE_DOMAIN": None,
     })
 
+    # ===== Flask-Mail Config =====
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = "abdikafimohamud126@gmail.com"
+    app.config['MAIL_PASSWORD'] = "erwa igfl djgl mpii"  # ✅ Gmail app password
+    app.config['MAIL_DEFAULT_SENDER'] = "abdikafimohamud126@gmail.com"
+
     # ===== Init Extensions =====
     db.init_app(app)
     migrate.init_app(app, db)
-
+    mail.init_app(app)   # ✅ Initialize Mail with app
 
     # ===== Import Models =====
     from models.clothes import Clothes

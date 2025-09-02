@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 export const AuthContext = createContext();
 
@@ -37,31 +37,31 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ✅ Login
- const login = async (email, password) => {
-  if (!email || !password) return { success: false, message: "Enter both email and password" };
+  const login = async (email, password) => {
+    if (!email || !password)
+      return { success: false, message: "Enter both email and password" };
 
-  try {
-    const res = await fetch("http://127.0.0.1:5000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("http://127.0.0.1:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      setUser(data.user);
-      return { success: true };
-    } else {
-      return { success: false, message: data.error || "Login failed" };
+      if (res.ok) {
+        setUser(data.user);
+        return { success: true };
+      } else {
+        return { success: false, message: data.error || "Login failed" };
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      return { success: false, message: "Network error" };
     }
-  } catch (err) {
-    console.error("Login error:", err);
-    return { success: false, message: "Network error" };
-  }
-};
-
+  };
 
   // ✅ Register
   const register = async (name, email, password) => {
@@ -79,7 +79,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       } else {
         const error = await res.json();
-        return { success: false, message: error.message || "Registration failed" };
+        return {
+          success: false,
+          message: error.message || "Registration failed",
+        };
       }
     } catch (err) {
       console.error("Register error:", err);
@@ -112,4 +115,9 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// ✅ Custom hook
+export const useAuth = () => {
+  return useContext(AuthContext);
 };
