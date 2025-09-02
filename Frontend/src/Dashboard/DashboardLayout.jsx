@@ -22,22 +22,25 @@ const DashboardLayout = () => {
   };
 
   // Fetch logged-in user info
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/get_current_user", {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err);
+useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/get_current_user", {
+        credentials: "include", // keep cookies
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data); 
+      } else {
+        setUser(null); // not logged in
       }
-    };
-    fetchUser();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      setUser(null);
+    }
+  };
+  fetchUser();
+}, []);
 
   // Handle logout
   const handleLogout = async () => {
@@ -75,7 +78,7 @@ const DashboardLayout = () => {
         {/* Navigation */}
         <nav className="space-y-3">
           <NavLink
-            to="dashboard-home"   // ✅ now relative route
+            to="/products/dashboard-home"
             end
             className={({ isActive }) =>
               `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
@@ -136,32 +139,33 @@ const DashboardLayout = () => {
           </NavLink>
 
           <NavLink
-            to="reports"
+            to="Profilee"
             className={({ isActive }) =>
               `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
             }
           >
-            <span className="mr-3">📊</span>
+            <span className="mr-3">👤</span>
             <span className="font-medium group-hover:translate-x-1 transition-transform">
-              Reports
+              Profile
             </span>
           </NavLink>
 
           <NavLink
-            to="setting"
+            to="Notifications"
             className={({ isActive }) =>
               `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
             }
           >
-            <span className="mr-3">⚙️</span>
+            <span className="mr-3">🔔</span>
             <span className="font-medium group-hover:translate-x-1 transition-transform">
-              Settings
+              Notifications
             </span>
           </NavLink>
-        </nav>
-
-        {/* Footer */}
-        <div className="mt-8 border-t border-white/30 pt-4">
+          
+          </nav>
+             
+          {/* Footer */}
+          <div className="mt-8 border-t border-white/30 pt-4">
           {user && (
             <div className="flex items-center mb-4 gap-3">
               <div className="w-12 h-12 rounded-full bg-white text-green-600 flex items-center justify-center text-lg font-bold shadow-md">
@@ -173,30 +177,29 @@ const DashboardLayout = () => {
               </div>
             </div>
           )}
-          <button
+         <button
             onClick={handleLogout}
             className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition"
           >
             🚪 Logout
           </button>
-        </div>
-      </aside>
+          </div>
+          </aside>
 
-      {/* Content */}
-      <main className="flex-1 lg:ml-64 p-8 overflow-y-auto">
-        <header className="bg-white shadow rounded-lg p-4 mb-6 flex items-center justify-between">
+          {/* Content */}
+          <main className="flex-1 lg:ml-64 p-8 overflow-y-auto">
+        
           <button
             className="lg:hidden text-gray-700 text-2xl"
             onClick={() => setIsSidebarOpen(true)}
           >
             ☰
           </button>
-          <h1 className="text-xl font-bold text-gray-800">User Dashboard</h1>
-        </header>
+          
 
-        <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-8rem)]">
+          <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-8rem)]">
           <Outlet />
-        </div>
+          </div>
       </main>
     </div>
   );

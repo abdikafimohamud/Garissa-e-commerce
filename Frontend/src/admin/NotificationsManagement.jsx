@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { FiBell, FiTrash2 } from "react-icons/fi";
 
-const USERS_API_URL = "http://localhost:3001/users";
-const NOTIFICATIONS_API_URL = "http://localhost:3001/notifications";
+const USERS_API_URL = "http://localhost:5000/users";
+const NOTIFICATIONS_API_URL = "http://localhost:5000/notifications";
 
 const NotificationsManagement = () => {
   const [notificationForm, setNotificationForm] = useState({

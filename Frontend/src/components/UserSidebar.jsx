@@ -1,10 +1,10 @@
+// src/components/UserSidebar.jsx
 import { useContext } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 export default function UserSidebar() {
   const { user, logout } = useContext(AuthContext);
-  const location = useLocation();
 
   const menuItems = [
     { path: "/products/dashboard-home", label: "Dashboard Home", icon: "🏠" },
@@ -12,9 +12,15 @@ export default function UserSidebar() {
     { path: "/products/cosmetics", label: "Cosmetics", icon: "💄" },
     { path: "/products/electronics", label: "Electronics", icon: "📱" },
     { path: "/products/sports", label: "Sports", icon: "🏀" },
-    { path: "/products/reports", label: "Reports", icon: "📊" },
-    { path: "/products/setting", label: "Settings", icon: "⚙️" },
+    { path: "/products/profilee", label: "Profile", icon: "👤" },
+    { path: "/products/notifications", label: "Notifications", icon: "🔔" },
   ];
+
+  const baseClasses =
+    "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200";
+  const activeClasses = "bg-blue-600 text-white shadow-md";
+  const inactiveClasses =
+    "text-gray-300 hover:bg-gray-700 hover:text-white";
 
   return (
     <aside className="w-64 bg-gray-800 text-white min-h-screen flex flex-col shadow-lg">
@@ -28,17 +34,16 @@ export default function UserSidebar() {
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.path}>
-              <Link
+              <NavLink
                 to={item.path}
-                className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  location.pathname === item.path
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                }`}
+                end
+                className={({ isActive }) =>
+                  `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                }
               >
                 <span className="mr-3 text-lg">{item.icon}</span>
                 {item.label}
-              </Link>
+              </NavLink>
             </li>
           ))}
         </ul>
@@ -49,7 +54,7 @@ export default function UserSidebar() {
         {user && (
           <div className="mb-4">
             <p className="text-sm text-gray-300">
-              👋 Welcome back,{" "}
+              👋 Welcome back,
               <span className="block font-semibold">{user.fullname}</span>
             </p>
           </div>

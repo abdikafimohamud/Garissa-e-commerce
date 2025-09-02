@@ -4,8 +4,8 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 // Components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -16,6 +16,12 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import ViewOrders from "./pages/ViewOrders";
 
+// Sellers Dashboard
+import SellerLayout from "./SellerDashboard/SellerLayout";
+import SellerHome from "./SellerDashboard/SellerHome";
+import Profile from "./SellerDashboard/Profile";
+import Settingss from "./SellerDashboard/Settingss";
+
 // User Dashboard
 import DashboardLayout from "./Dashboard/DashboardLayout";
 import DashboardHome from "./Dashboard/DashboardHome";
@@ -23,8 +29,8 @@ import Clothes from "./Dashboard/Clothes";
 import Cosmetics from "./Dashboard/Cosmetics";
 import Electronics from "./Dashboard/Electronics";
 import Sports from "./Dashboard/Sports";
-import Reports from "./Dashboard/Reports";
-import Setting from "./Dashboard/Setting";
+import Profilee from "./Dashboard/Profilee";
+import Notifications from "./Dashboard/Notifications";
 
 // Admin Dashboard
 import AdminDashboardLayout from "./admin/AdminDashboardLayout";
@@ -34,6 +40,8 @@ import ElectronicsManagement from "./admin/ElectronicsManagement";
 import OrdersManagement from "./admin/OrdersManagement";
 import UserManagement from "./admin/UserManagement";
 import SportsManagement from "./admin/SportsManagement";
+import NotificationsManagement from "./admin/NotificationsManagement";
+import Reports from "./admin/Reports";
 
 // ✅ Layout wrapper with Navbar & Footer
 function PublicLayout({ cartItems }) {
@@ -104,9 +112,8 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* 🌍 Public layout (with Navbar + Footer) */}
+        {/* 🌍 Public layout */}
         <Route element={<PublicLayout cartItems={cartItems} />}>
-          {/* Public pages */}
           <Route
             path="/"
             element={
@@ -125,14 +132,12 @@ function App() {
           <Route
             path="/cart"
             element={
-              
-                <Cart
-                  cartItems={cartItems}
-                  removeFromCart={removeFromCart}
-                  updateQuantity={updateQuantity}
-                  clearCart={clearCart}
-                />
-              
+              <Cart
+                cartItems={cartItems}
+                removeFromCart={removeFromCart}
+                updateQuantity={updateQuantity}
+                clearCart={clearCart}
+              />
             }
           />
           <Route
@@ -140,9 +145,17 @@ function App() {
             element={<Checkout cartItems={cartItems} clearCart={clearCart} />}
           />
 
-          {/* 👤 User Dashboard */}
-          <Route path="/products" element={<DashboardLayout />}>
-            <Route index element={<DashboardHome />} /> {/* ✅ Fixed */}
+          {/* 👤 User Dashboard (protected) */}
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard-home" replace />} />
+            <Route path="dashboard-home" element={<DashboardHome />} />
             <Route
               path="clothes"
               element={<Clothes products={clothes} addToCart={addToCart} />}
@@ -161,12 +174,19 @@ function App() {
               path="sports"
               element={<Sports products={sports} addToCart={addToCart} />}
             />
-            <Route path="reports" element={<Reports />} />
-            <Route path="setting" element={<Setting />} />
+            <Route path="Profilee" element={<Profilee />} />
+            <Route path="Notifications" element={<Notifications />} />
           </Route>
 
-          {/* View Orders page (user) */}
           <Route path="/orders" element={<ViewOrders />} />
+        </Route>
+
+        {/* 🏬 Sellers routes with SellerLayout */}
+        <Route path="/Sellers" element={<SellerLayout />}>
+          <Route index element={<Navigate to="Seller-Home" replace />} />
+          <Route path="Seller-Home" element={<SellerHome />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settingss" element={<Settingss />} />
         </Route>
 
         {/* 🔐 Admin dashboard */}
@@ -180,10 +200,15 @@ function App() {
           />
           <Route path="sportsmanagement" element={<SportsManagement />} />
           <Route path="ordersmanagement" element={<OrdersManagement />} />
+          <Route
+            path="NotificationsManagement"
+            element={<NotificationsManagement />}
+          />
           <Route path="usermanagement" element={<UserManagement />} />
+          <Route path="Reports" element={<Reports />} />
         </Route>
 
-        {/* 🛑 Catch all */}
+        {/* 🚫 Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </AuthProvider>

@@ -1,7 +1,6 @@
 # backend/models/clothes.py
 from app import db
 
-
 class Clothes(db.Model):
     __tablename__ = "clothes"
 

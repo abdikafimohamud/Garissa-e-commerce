@@ -45,10 +45,21 @@ export default function AdminSidebar() {
             Manage Orders
           </NavLink>
 
+          <NavLink to="/admin/NotificationsManagement" className={linkClasses}>
+            <span className="mr-3">📱</span>
+            Manage Notifications
+          </NavLink>
+
           <NavLink to="/admin/UserManagement" className={linkClasses}>
             <span className="mr-3">⚙️</span>
             Users
           </NavLink>
+
+          <NavLink to="/admin/Reports" className={linkClasses}>
+            <span className="mr-3">⚙️</span>
+            Reports
+          </NavLink>
+
         </nav>
       </div>
 

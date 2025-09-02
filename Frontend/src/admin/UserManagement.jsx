@@ -8,18 +8,29 @@ const UserManagement = () => {
   const [perPage] = useState(5); // users per page
   const [formData, setFormData] = useState({ fullname: "", email: "", password: "" });
   const [editingUser, setEditingUser] = useState(null);
+  const [error, setError] = useState("");
 
-  // Fetch users from backend
+  // Fetch all users
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/users", { credentials: "include" });
+      const res = await fetch("http://127.0.0.1:5000/users", {
+        credentials: "include",
+      });
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
         setFilteredUsers(data);
+      } else if (res.status === 401) {
+        setError("⚠️ Not authorized. Please log in as admin.");
+        setUsers([]);
+        setFilteredUsers([]);
+      } else {
+        const err = await res.json();
+        setError(err.error || "Failed to fetch users");
       }
     } catch (err) {
       console.error("Error fetching users:", err);
+      setError("Server error while fetching users");
     }
   };
 
@@ -27,29 +38,15 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
-  // Handle search filter
-  useEffect(() => {
-    const filtered = users.filter(
-      (u) =>
-        u.fullname.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-    setCurrentPage(1); // reset to page 1 on search
-  }, [search, users]);
-
-  // Pagination logic
-  const indexOfLast = currentPage * perPage;
-  const indexOfFirst = indexOfLast - perPage;
-  const currentUsers = filteredUsers.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredUsers.length / perPage);
-
   // Handle form change
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Handle form submit (Add or Edit user)
+  // Add or Edit user
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
       const url = editingUser
         ? `http://127.0.0.1:5000/users/${editingUser.id}`
@@ -70,36 +67,62 @@ const UserManagement = () => {
         setEditingUser(null);
       } else {
         const err = await res.json();
-        alert(err.error || "Something went wrong");
+        setError(err.error || "Something went wrong");
       }
     } catch (err) {
       console.error("Error saving user:", err);
+      setError("Server error while saving user");
     }
   };
 
-  // Handle delete user
+  // Delete user
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await fetch(`http://127.0.0.1:5000/users/${id}`, {
+      const res = await fetch(`http://127.0.0.1:5000/users/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      fetchUsers();
+      if (res.ok) {
+        fetchUsers();
+      } else {
+        const err = await res.json();
+        setError(err.error || "Failed to delete user");
+      }
     } catch (err) {
       console.error("Error deleting user:", err);
+      setError("Server error while deleting user");
     }
   };
 
-  // Handle edit user
+  // Edit user
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({ fullname: user.fullname, email: user.email, password: "" });
   };
 
+  // Search filter
+  useEffect(() => {
+    const filtered = users.filter(
+      (u) =>
+        u.fullname.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+    setCurrentPage(1);
+  }, [search, users]);
+
+  // Pagination
+  const indexOfLast = currentPage * perPage;
+  const indexOfFirst = indexOfLast - perPage;
+  const currentUsers = filteredUsers.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredUsers.length / perPage);
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">👥 User Management</h2>
+
+      {error && <p className="text-red-500 mb-4">{error}</p>}
 
       {/* Add/Edit Form */}
       <form
@@ -119,7 +142,6 @@ const UserManagement = () => {
           required
           className="border px-3 py-2 rounded-lg"
         />
-
         <input
           type="email"
           name="email"
@@ -129,7 +151,6 @@ const UserManagement = () => {
           required
           className="border px-3 py-2 rounded-lg"
         />
-
         <input
           type="password"
           name="password"
@@ -209,7 +230,9 @@ const UserManagement = () => {
         >
           ◀ Prev
         </button>
-        <span className="px-3 py-1">Page {currentPage} of {totalPages}</span>
+        <span className="px-3 py-1">
+          Page {currentPage} of {totalPages}
+        </span>
         <button
           onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
           disabled={currentPage === totalPages}

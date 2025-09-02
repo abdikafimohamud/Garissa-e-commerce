@@ -14,31 +14,27 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/login", {
+      const response = await fetch("http://127.0.0.1:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ ensures Flask session cookie is stored
+        credentials: "include", // ✅ allows Flask session cookies
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok) {
-        setError(data.error || "Invalid email or password!");
+      if (!response.ok) {
+        setError(data.error || "Invalid credentials!");
         return;
       }
 
-      // ✅ Save user in context (backend returns user.to_dict())
       login(data.user);
-
-      // Redirect to dashboard after login
-      navigate("/dashboard");
+      navigate("/products");
     } catch (err) {
       console.error("Login error:", err);
-      setError("⚠️ Cannot connect to server. Please try again later.");
+      setError("Error connecting to server. Please try again later.");
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <form

@@ -28,13 +28,21 @@ const Navbar = ({ cartItems = [] }) => {
             <span>Home</span>
           </Link>
 
+           <Link
+            to="/Sellers"
+            className="flex items-center hover:text-indigo-200 transition-colors"
+          >
+            <FaTshirt className="mr-1" />
+            <span>Sellers</span>
+          </Link>
+
           {/* ✅ Products now goes to Dashboard with Sidebar */}
           <Link
             to="/products"
             className="flex items-center hover:text-indigo-200 transition-colors"
           >
             <FaTshirt className="mr-1" />
-            <span>products</span>
+            <span>Buyers</span>
           </Link>
 
           <Link

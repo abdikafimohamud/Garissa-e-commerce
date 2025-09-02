@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    fullname: "",
+    firstname: "",
+    secondname: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    phone: "",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -21,20 +22,17 @@ const Register = () => {
     setError("");
     setSuccess("");
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
     try {
-      const res = await fetch("http://127.0.0.1:5000/register", {
+      const res = await fetch("http://localhost:5000/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ needed for session
+        credentials: "include",
         body: JSON.stringify({
-          fullname: formData.fullname,
+          firstname: formData.firstname,
+          secondname: formData.secondname,
           email: formData.email,
           password: formData.password,
+          phone: formData.phone,
         }),
       });
 
@@ -46,7 +44,7 @@ const Register = () => {
         setSuccess("✅ Registration successful! Redirecting...");
         setTimeout(() => navigate("/login"), 2000);
       }
-    } catch{
+    } catch {
       setError("Something went wrong. Please try again later.");
     }
   };
@@ -63,14 +61,27 @@ const Register = () => {
         {success && <p className="text-green-500 text-sm mb-4">{success}</p>}
 
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Full Name</label>
+          <label className="block text-gray-700 mb-2">First Name</label>
           <input
             type="text"
-            name="fullname"
-            value={formData.fullname}
+            name="firstname"
+            value={formData.firstname}
             onChange={handleChange}
             className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Enter your full name"
+            placeholder="Enter your first name"
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Second Name</label>
+          <input
+            type="text"
+            name="secondname"
+            value={formData.secondname}
+            onChange={handleChange}
+            className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Enter your second name"
             required
           />
         </div>
@@ -89,6 +100,19 @@ const Register = () => {
         </div>
 
         <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Phone Number</label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Enter your phone number"
+            required
+          />
+        </div>
+
+        <div className="mb-6">
           <label className="block text-gray-700 mb-2">Password</label>
           <input
             type="password"
@@ -97,19 +121,6 @@ const Register = () => {
             onChange={handleChange}
             className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Enter your password"
-            required
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 mb-2">Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Confirm your password"
             required
           />
         </div>

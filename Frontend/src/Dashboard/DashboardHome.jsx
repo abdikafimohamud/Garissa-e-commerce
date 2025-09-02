@@ -12,14 +12,21 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-8">
-      {/* Page Title */}
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
+      {/* ==== Page Header (User Dashboard) ==== */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+        <h1 className="text-2xl font-bold text-gray-800">User Dashboard</h1>
+      </div>
+
+      {/* ==== Dashboard Overview ==== */}
+      <h2 className="text-3xl font-bold text-gray-800">Dashboard Overview</h2>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
           <h3 className="text-gray-500">Total Products</h3>
-          <p className="text-2xl font-bold text-blue-600">{stats.totalProducts}</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {stats.totalProducts}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">

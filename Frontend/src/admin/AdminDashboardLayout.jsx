@@ -11,7 +11,7 @@ const AdminDashboardLayout = () => {
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Fixed Sidebar */}
-      <aside className="w-64 bg-red-800 text-white p-6 shadow-lg fixed h-full overflow-y-auto">
+      <aside className="w-64 bg-gradient-to-r from-green-500 to-yellow-500 text-white p-6 shadow-lg fixed h-full overflow-y-auto">
         <div className="flex items-center mb-8">
           <h2 className="text-2xl font-bold tracking-tight">ADMIN PANEL</h2>
         </div>
@@ -42,10 +42,21 @@ const AdminDashboardLayout = () => {
             <span>Orders</span>
           </NavLink>
 
+          <NavLink to="NotificationsManagement" className={linkClasses}>
+            <span className="mr-3">📱</span>
+            <span>Notifications</span>
+          </NavLink>
+
           <NavLink to="UserManagement" className={linkClasses}>
             <span className="mr-3">⚙️</span>
             <span>Users</span>
           </NavLink>
+
+          <NavLink to="Reports" className={linkClasses}>
+            <span className="mr-3">⚙️</span>
+            <span>Reports</span>
+          </NavLink>
+
         </nav>
       </aside>
 

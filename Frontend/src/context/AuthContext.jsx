@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/get_current_user", {
+        const res = await fetch("http://localhost:5000/get_current_user", {
           method: "GET",
           credentials: "include", // important for session cookie
         });
@@ -37,33 +37,36 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ✅ Login
-  const login = async (email, password) => {
-    try {
-      const res = await fetch("http://127.0.0.1:5000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+ const login = async (email, password) => {
+  if (!email || !password) return { success: false, message: "Enter both email and password" };
 
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        return { success: true };
-      } else {
-        const error = await res.json();
-        return { success: false, message: error.message || "Login failed" };
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      return { success: false, message: "Network error" };
+  try {
+    const res = await fetch("http://127.0.0.1:5000/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setUser(data.user);
+      return { success: true };
+    } else {
+      return { success: false, message: data.error || "Login failed" };
     }
-  };
+  } catch (err) {
+    console.error("Login error:", err);
+    return { success: false, message: "Network error" };
+  }
+};
+
 
   // ✅ Register
   const register = async (name, email, password) => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/register", {
+      const res = await fetch("http://localhost:5000/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -87,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Logout
   const logout = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/logout", {
+      const res = await fetch("http://localhost:5000/logout", {
         method: "POST",
         credentials: "include",
       });
