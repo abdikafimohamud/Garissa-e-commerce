@@ -7,10 +7,10 @@ import {
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
+// API base URL - adjust this to match your Flask backend URL
+const API_BASE_URL = "http://127.0.0.1:5000"; // Default Flask port
+
 const Checkout = ({ cartItems, clearCart }) => {
-  
-
-
   // Simulate logged-in user (replace with your auth later)
   const user = JSON.parse(localStorage.getItem("user")) || {
     username: "Guest",
@@ -18,6 +18,9 @@ const Checkout = ({ cartItems, clearCart }) => {
 
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState("card"); // Default payment method
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,12 +30,17 @@ const Checkout = ({ cartItems, clearCart }) => {
     city: "",
     state: "",
     zip: "",
-    country: "Kenya", // Changed default to Kenya
+    country: "Kenya",
     cardNumber: "",
     cardName: "",
     expiry: "",
     cvv: "",
     saveInfo: false,
+    // M-Pesa and EVC specific fields
+    phoneNumber: "",
+    // PayPill specific fields
+    paypillEmail: "",
+    paypillPassword: "",
   });
 
   // Calculate order totals (same as in Cart.jsx)
@@ -52,23 +60,71 @@ const Checkout = ({ cartItems, clearCart }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handlePaymentMethodChange = (method) => {
+    setPaymentMethod(method);
+  };
+
+  const createOrder = async (orderData) => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+      
+      const token = localStorage.getItem("access_token");
+      
+      const response = await fetch(`${API_BASE_URL}/api/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(orderData),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error response:", errorText);
+        throw new Error(errorText || "Failed to create order");
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("API call error:", error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (activeStep === 1) {
       setActiveStep(2);
-    } else {
-      // Create order object
-      const order = {
-        id: `ORD-${Math.floor(Math.random() * 1000000)}`,
-        date: new Date().toISOString(),
-        status: "processing",
-        items: [...cartItems], // Create a copy of cart items
+      return;
+    }
+    
+    try {
+      // Prepare order data for API
+      const orderData = {
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+          color: item.color,
+          size: item.size
+        })),
         subtotal,
         tax,
         shipping,
         total,
-        shippingInfo: { 
-          name: `${formData.firstName} ${formData.lastName}`,
+        payment_method: paymentMethod,
+        shipping_info: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
@@ -77,25 +133,58 @@ const Checkout = ({ cartItems, clearCart }) => {
           zip: formData.zip,
           country: formData.country
         },
+        // Payment details based on selected method
+        ...(paymentMethod === "card" && {
+          card_number: formData.cardNumber,
+          card_name: formData.cardName,
+          expiry: formData.expiry,
+          cvv: formData.cvv
+        }),
+        ...((paymentMethod === "mpesa" || paymentMethod === "evc") && {
+          phone_number: formData.phoneNumber || formData.phone
+        }),
+        ...(paymentMethod === "paypill" && {
+          paypill_email: formData.paypillEmail,
+          paypill_password: formData.paypillPassword
+        })
       };
-
-      // Get all orders from localStorage
+      
+      console.log("Submitting order:", orderData);
+      
+      // Send order to backend
+      const result = await createOrder(orderData);
+      console.log("Order created successfully:", result);
+      
+      // If successful, update local storage and state
       const allOrders = JSON.parse(localStorage.getItem("orders")) || {};
-
+      
       // Ensure user has their own order list
       if (!allOrders[user.username]) {
         allOrders[user.username] = [];
       }
-
+      
       // Add new order to user's orders
-      allOrders[user.username].unshift(order);
-
+      allOrders[user.username].unshift({
+        id: result.order.order_number,
+        date: result.order.created_at,
+        status: result.order.status,
+        items: [...cartItems],
+        subtotal,
+        tax,
+        shipping,
+        total,
+        paymentMethod,
+        shippingInfo: orderData.shipping_info
+      });
+      
       // Save back to localStorage
       localStorage.setItem("orders", JSON.stringify(allOrders));
-
+      
       setIsOrderPlaced(true);
       clearCart();
-      // REMOVED THE AUTOMATIC REDIRECTION
+    } catch (error) {
+      console.error("Order submission error:", error);
+      // Error is already set in createOrder function
     }
   };
 
@@ -132,9 +221,9 @@ const Checkout = ({ cartItems, clearCart }) => {
             Continue Shopping
           </Link>
           <Link
-             to="/orders"
+            to="/orders"
             className="inline-block bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-red-300 text-gray-800 font-medium py-2 px-6 rounded-lg transition-colors"
-            >
+          >
             View Orders
           </Link>
         </div>
@@ -144,6 +233,16 @@ const Checkout = ({ cartItems, clearCart }) => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <p>Error: {error}</p>
+          <p className="text-sm mt-1">
+            Make sure your Flask backend is running on {API_BASE_URL}
+          </p>
+        </div>
+      )}
+      
       {/* Checkout Progress */}
       <div className="flex items-center justify-between mb-8 relative">
         <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10"></div>
@@ -247,225 +346,376 @@ const Checkout = ({ cartItems, clearCart }) => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label
+                    htmlFor="city"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-  
-                <div className="mb-6">
+                <div>
                   <label
-                    htmlFor="phone"
+                    htmlFor="state"
                     className="block text-sm font-medium mb-1"
                   >
-                    Phone Number *
+                    State/Province *
+                  </label>
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="zip"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    ZIP/Postal Code *
+                  </label>
+                  <input
+                    type="text"
+                    id="zip"
+                    name="zip"
+                    value={formData.zip}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label
+                  htmlFor="country"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Country *
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Kenya">Kenya</option>
+                  <option value="Somalia">Somalia</option>
+                  <option value="Uganda">Uganda</option>
+                  <option value="Tanzania">Tanzania</option>
+                  <option value="Ethiopia">Ethiopia</option>
+                </select>
+              </div>
+
+              <div className="flex justify-between items-center mt-8">
+                <Link
+                  to="/cart"
+                  className="flex items-center text-blue-600 hover:text-blue-800"
+                >
+                  <FiArrowLeft className="mr-1" />
+                  Back to Cart
+                </Link>
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-gradient-to-r from-green-500 to-yellow-500 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                >
+                  Continue to Payment
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-xl shadow-sm p-6"
+            >
+              <h2 className="text-xl font-bold mb-6 flex items-center">
+                <FiCreditCard className="mr-2" />
+                Payment Information
+              </h2>
+
+              {/* Payment Method Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Select Payment Method *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentMethodChange("card")}
+                    className={`p-3 border rounded-lg text-center ${
+                      paymentMethod === "card"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-lg">💳</div>
+                    <span className="text-sm">Credit/Debit Card</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentMethodChange("mpesa")}
+                    className={`p-3 border rounded-lg text-center ${
+                      paymentMethod === "mpesa"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-lg">📱</div>
+                    <span className="text-sm">M-Pesa</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentMethodChange("evc")}
+                    className={`p-3 border rounded-lg text-center ${
+                      paymentMethod === "evc"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-lg">📞</div>
+                    <span className="text-sm">EVC Plus</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentMethodChange("paypill")}
+                    className={`p-3 border rounded-lg text-center ${
+                      paymentMethod === "paypill"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-lg">💊</div>
+                    <span className="text-sm">PayPill</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Form Based on Selection */}
+              {paymentMethod === "card" && (
+                <>
+                  <div className="mb-6">
+                    <label
+                      htmlFor="cardNumber"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Card Number *
+                    </label>
+                    <input
+                      type="text"
+                      id="cardNumber"
+                      name="cardNumber"
+                      value={formData.cardNumber}
+                      onChange={handleInputChange}
+                      placeholder="1234 5678 9012 3456"
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label
+                      htmlFor="cardName"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Name on Card *
+                    </label>
+                    <input
+                      type="text"
+                      id="cardName"
+                      name="cardName"
+                      value={formData.cardName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label
+                        htmlFor="expiry"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        Expiry Date *
+                      </label>
+                      <input
+                        type="text"
+                        id="expiry"
+                        name="expiry"
+                        value={formData.expiry}
+                        onChange={handleInputChange}
+                        placeholder="MM/YY"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="cvv"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        CVV *
+                      </label>
+                      <input
+                        type="text"
+                        id="cvv"
+                        name="cvv"
+                        value={formData.cvv}
+                        onChange={handleInputChange}
+                        placeholder="123"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {paymentMethod === "mpesa" && (
+                <div className="mb-6">
+                  <label
+                    htmlFor="mpesaNumber"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    M-Pesa Phone Number *
                   </label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="mpesaNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={handleInputChange}
+                    placeholder="07XX XXX XXX"
                     required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <p className="text-sm text-gray-500 mt-2">
+                    You will receive a prompt on your phone to complete the payment
+                  </p>
                 </div>
-  
+              )}
+
+              {paymentMethod === "evc" && (
                 <div className="mb-6">
                   <label
-                    htmlFor="address"
+                    htmlFor="evcNumber"
                     className="block text-sm font-medium mb-1"
                   >
-                    Street Address *
+                    EVC Plus Phone Number *
                   </label>
                   <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={formData.address}
+                    type="tel"
+                    id="evcNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={handleInputChange}
+                    placeholder="61XX XXX XXX"
                     required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <p className="text-sm text-gray-500 mt-2">
+                    You will receive a prompt on your phone to complete the payment
+                  </p>
                 </div>
-  
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div>
+              )}
+
+              {paymentMethod === "paypill" && (
+                <>
+                  <div className="mb-6">
                     <label
-                      htmlFor="city"
+                      htmlFor="paypillEmail"
                       className="block text-sm font-medium mb-1"
                     >
-                      City *
+                      PayPill Email *
                     </label>
                     <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
+                      type="email"
+                      id="paypillEmail"
+                      name="paypillEmail"
+                      value={formData.paypillEmail}
+                      onChange={handleInputChange}
+                      placeholder="your@email.com"
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <label
+                      htmlFor="paypillPassword"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      PayPill Password *
+                    </label>
+                    <input
+                      type="password"
+                      id="paypillPassword"
+                      name="paypillPassword"
+                      value={formData.paypillPassword}
                       onChange={handleInputChange}
                       required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div>
-                    <label
-                      htmlFor="state"
-                      className="block text-sm font-medium mb-1"
-                    >
-                      State/Province *
-                    </label>
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="zip"
-                      className="block text-sm font-medium mb-1"
-                    >
-                      ZIP/Postal Code *
-                    </label>
-                    <input
-                      type="text"
-                      id="zip"
-                      name="zip"
-                      value={formData.zip}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-  
-                <div className="mb-6">
-                  <label
-                    htmlFor="country"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Country *
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Kenya">Kenya</option>
-                    <option value="Somalia">Somalia</option>
-                    <option value="Uganda">Uganda</option>
-                    <option value="Tanzania">Tanzania</option>
-                    <option value="Ethiopia">Ethiopia</option>
-                  </select>
-                </div>
-  
-                <div className="flex justify-between items-center mt-8">
-                  <Link
-                    to="/cart"
-                    className="flex items-center text-blue-600 hover:text-blue-800"
-                  >
-                    <FiArrowLeft className="mr-1" />
-                    Back to Cart
-                  </Link>
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-gradient-to-r from-green-500 to-yellow-500 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                  >
-                    Continue to Payment
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="bg-white rounded-xl shadow-sm p-6"
-              >
-                <h2 className="text-xl font-bold mb-6 flex items-center">
-                  <FiCreditCard className="mr-2" />
-                  Payment Information
-                </h2>
-  
-                <div className="mb-6">
-                  <label
-                    htmlFor="cardNumber"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Card Number *
-                  </label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    name="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={handleInputChange}
-                    placeholder="1234 5678 9012 3456"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-  
-                <div className="mb-6">
-                  <label
-                    htmlFor="cardName"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Name on Card *
-                  </label>
-                  <input
-                    type="text"
-                    id="cardName"
-                    name="cardName"
-                    value={formData.cardName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-  
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label
-                      htmlFor="expiry"
-                      className="block text-sm font-medium mb-1"
-                    >
-                      Expiry Date *
-                    </label>
-                    <input
-                      type="text"
-                      id="expiry"
-                      name="expiry"
-                      value={formData.expiry}
-                      onChange={handleInputChange}
-                      placeholder="MM/YY"
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="cvv"
-                      className="block text-sm font-medium mb-1"
-                    >
-                      CVV *
-                    </label>
-                    <input
-                      type="text"
-                      id="cvv"
-                      name="cvv"
-                      value={formData.cvv}
-                      onChange={handleInputChange}
-                      placeholder="123"
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-  
+                </>
+              )}
+
+              {paymentMethod === "card" && (
                 <div className="flex items-center mb-6">
                   <input
                     type="checkbox"
@@ -482,91 +732,93 @@ const Checkout = ({ cartItems, clearCart }) => {
                     Save payment information for next time
                   </label>
                 </div>
-  
-                <div className="flex justify-between items-center mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setActiveStep(1)}
-                    className="flex items-center text-blue-600 hover:text-blue-800"
-                  >
-                    <FiArrowLeft className="mr-1" />
-                    Back to Shipping
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                  >
-                    Place Order
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-  
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-  
-              <div className="mb-6 max-h-64 overflow-y-auto">
-                {cartItems.map((item) => (
-                  <div
-                    key={`${item.id}-${item.size}-${item.color}`}
-                    className="flex items-center py-3 border-b border-gray-100"
-                  >
-                    <img
-                      src={item.imageUrl || "/placeholder-product.jpg"}
-                      alt={item.name} 
-                      className="w-12 h-12 object-cover rounded mr-3"
-                    />
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium">{item.name}</h3>
-                      <p className="text-xs text-gray-600">
-                        {item.quantity} × ${item.price.toFixed(2)}
-                        {item.color && ` • ${item.color}`}
-                        {item.size && ` • ${item.size}`}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+              )}
+
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  type="button"
+                  onClick={() => setActiveStep(1)}
+                  className="flex items-center text-blue-600 hover:text-blue-800"
+                >
+                  <FiArrowLeft className="mr-1" />
+                  Back to Shipping
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isProcessing ? "Processing..." : "Place Order"}
+                </button>
               </div>
-  
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>
-                    {shipping === 0 ? (
-                      <span className="text-green-600">Free</span>
-                    ) : (
-                      `$${shipping.toFixed(2)}`
-                    )}
+            </form>
+          )}
+        </div>
+
+        {/* Order Summary */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
+            <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+
+            <div className="mb-6 max-h-64 overflow-y-auto">
+              {cartItems.map((item) => (
+                <div
+                  key={`${item.id}-${item.size}-${item.color}`}
+                  className="flex items-center py-3 border-b border-gray-100"
+                >
+                  <img
+                    src={item.imageUrl || "/placeholder-product.jpg"}
+                    alt={item.name} 
+                    className="w-12 h-12 object-cover rounded mr-3"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium">{item.name}</h3>
+                    <p className="text-xs text-gray-600">
+                      {item.quantity} × ${item.price.toFixed(2)}
+                      {item.color && ` • ${item.color}`}
+                      {item.size && ` • ${item.size}`}
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium">
+                    ${(item.price * item.quantity).toFixed(2)}
                   </span>
                 </div>
-                <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
-  
-              <div className="bg-gradient-to-r from-green-500 to-yellow-500 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
-                <p>Free shipping on orders over $100. All prices include tax.</p>
+              <div className="flex justify-between">
+                <span>Tax (8%)</span>
+                <span>${tax.toFixed(2)}</span>
               </div>
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>
+                  {shipping === 0 ? (
+                    <span className="text-green-600">Free</span>
+                  ) : (
+                    `$${shipping.toFixed(2)}`
+                  )}
+                </span>
+              </div>
+              <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-500 to-yellow-500 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+              <p>Free shipping on orders over $100. All prices include tax.</p>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
-  
-  export default Checkout;
+    </div>
+  );
+};
+
+export default Checkout;

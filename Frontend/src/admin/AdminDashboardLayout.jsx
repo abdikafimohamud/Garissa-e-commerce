@@ -1,4 +1,15 @@
+// src/layouts/AdminDashboardLayout.jsx
 import { NavLink, Outlet } from "react-router-dom";
+import {
+  FiHome,
+  FiUsers,
+  FiBox,
+  FiShoppingCart,
+  FiBarChart2,
+  FiDollarSign,
+  FiBell,
+  FiFileText,
+} from "react-icons/fi";
 
 const AdminDashboardLayout = () => {
   const linkClasses = ({ isActive }) =>
@@ -17,46 +28,50 @@ const AdminDashboardLayout = () => {
         </div>
 
         <nav className="space-y-3">
-          <NavLink to="ClothesManagement" className={linkClasses}>
-            <span className="mr-3">👕</span>
-            <span>Clothes</span>
+          {/* Dashboard */}
+          <NavLink to="/admin/Home" className={linkClasses}>
+            <FiHome className="mr-3" /> AdminHome
           </NavLink>
 
-          <NavLink to="CosmeticsManagement" className={linkClasses}>
-            <span className="mr-3">💄</span>
-            <span>Cosmetics</span>
+          {/* Seller Management */}
+          <NavLink to="/admin/sellers" className={linkClasses}>
+            <FiUsers className="mr-3" /> Manage Sellers
           </NavLink>
 
-          <NavLink to="ElectronicsManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            <span>Electronics</span>
+          {/* Buyer Management */}
+          <NavLink to="/admin/buyers" className={linkClasses}>
+            <FiUsers className="mr-3" /> Manage Buyers
           </NavLink>
 
-          <NavLink to="SportsManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            <span>Sports</span>
+          {/* Product Management */}
+          <NavLink to="/admin/products" className={linkClasses}>
+            <FiBox className="mr-3" /> Manage Products
           </NavLink>
 
-          <NavLink to="OrdersManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            <span>Orders</span>
+          {/* Orders Management */}
+          <NavLink to="/admin/orders" className={linkClasses}>
+            <FiShoppingCart className="mr-3" /> Manage Orders
           </NavLink>
 
-          <NavLink to="NotificationsManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            <span>Notifications</span>
+          {/* Analytics */}
+          <NavLink to="/admin/analytics" className={linkClasses}>
+            <FiBarChart2 className="mr-3" /> Analytics
           </NavLink>
 
-          <NavLink to="UserManagement" className={linkClasses}>
-            <span className="mr-3">⚙️</span>
-            <span>Users</span>
+          {/* Earnings */}
+          <NavLink to="/admin/earnings" className={linkClasses}>
+            <FiDollarSign className="mr-3" /> Earnings
           </NavLink>
 
-          <NavLink to="Reports" className={linkClasses}>
-            <span className="mr-3">⚙️</span>
-            <span>Reports</span>
+          {/* Notifications */}
+          <NavLink to="/admin/notifications" className={linkClasses}>
+            <FiBell className="mr-3" /> Notifications
           </NavLink>
 
+          {/* Reports */}
+          <NavLink to="/admin/reports" className={linkClasses}>
+            <FiFileText className="mr-3" /> Reports
+          </NavLink>
         </nav>
       </aside>
 

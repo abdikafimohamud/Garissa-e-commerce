@@ -6,22 +6,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = "http://localhost:5000"; // ✅ Single base URL
+
   // ✅ Fetch current user when app loads
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/get_current_user", {
+        const res = await fetch(`${API_URL}/get_current_user`, {
           method: "GET",
           credentials: "include", // important for session cookie
         });
 
         if (res.ok) {
           const data = await res.json();
-          if (data && data.user) {
-            setUser(data.user);
-          } else {
-            setUser(null);
-          }
+          setUser(data.user || null);
         } else {
           setUser(null);
         }
@@ -42,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: "Enter both email and password" };
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/login", {
+      const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -66,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Register
   const register = async (name, email, password) => {
     try {
-      const res = await fetch("http://localhost:5000/register", {
+      const res = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -93,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Logout
   const logout = async () => {
     try {
-      const res = await fetch("http://localhost:5000/logout", {
+      const res = await fetch(`${API_URL}/logout`, {
         method: "POST",
         credentials: "include",
       });

@@ -7,13 +7,14 @@ export default function UserSidebar() {
   const { user, logout } = useContext(AuthContext);
 
   const menuItems = [
-    { path: "/products/dashboard-home", label: "Dashboard Home", icon: "🏠" },
-    { path: "/products/clothes", label: "Clothes", icon: "👕" },
-    { path: "/products/cosmetics", label: "Cosmetics", icon: "💄" },
-    { path: "/products/electronics", label: "Electronics", icon: "📱" },
-    { path: "/products/sports", label: "Sports", icon: "🏀" },
-    { path: "/products/profilee", label: "Profile", icon: "👤" },
-    { path: "/products/notifications", label: "Notifications", icon: "🔔" },
+    { path: "/Buyers/dashboard-home", label: "Dashboard Home", icon: "🏠" },
+    { path: "/Buyers/clothes", label: "Clothes", icon: "👕" },
+    { path: "/Buyers/cosmetics", label: "Cosmetics", icon: "💄" },
+    { path: "/Buyers/electronics", label: "Electronics", icon: "📱" },
+    { path: "/Buyers/sports", label: "Sports", icon: "🏀" },
+    { path: "/Buyers/cart", label: "Cart", icon: "🛒" },
+    { path: "/Buyers/profilee", label: "Profile", icon: "👤" },
+    { path: "/Buyers/notifications", label: "Notifications", icon: "🔔" },
   ];
 
   const baseClasses =

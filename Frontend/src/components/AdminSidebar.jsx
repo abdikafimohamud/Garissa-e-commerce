@@ -1,4 +1,16 @@
+// src/components/AdminSidebar.jsx
 import { NavLink, useNavigate } from "react-router-dom";
+import {
+  FiHome,
+  FiUsers,
+  FiBox,
+  FiShoppingCart,
+  FiBarChart2,
+  FiDollarSign,
+  FiBell,
+  FiFileText,
+  FiLogOut,
+} from "react-icons/fi";
 
 export default function AdminSidebar() {
   const navigate = useNavigate();
@@ -6,12 +18,14 @@ export default function AdminSidebar() {
   const handleLogout = () => {
     // 🔐 Clear auth session (adjust to your auth system)
     localStorage.removeItem("authToken");
-    navigate("/login"); 
+    navigate("/login");
   };
 
   const linkClasses = ({ isActive }) =>
     `flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
-      isActive ? "bg-green-600 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"
+      isActive
+        ? "bg-green-600 text-white"
+        : "text-gray-300 hover:bg-gray-700 hover:text-white"
     }`;
 
   return (
@@ -20,46 +34,50 @@ export default function AdminSidebar() {
       <div>
         <h2 className="text-2xl font-bold mb-8 tracking-wide">Admin Panel</h2>
         <nav className="space-y-3">
-          <NavLink to="/admin/clothesmanagement" className={linkClasses}>
-            <span className="mr-3">👕</span>
-            Manage Clothes
+          {/* Dashboard */}
+          <NavLink to="/admin/AdminHome" className={linkClasses}>
+            <FiHome className="mr-3" /> Dashboard
           </NavLink>
 
-          <NavLink to="/admin/cosmeticsmanagement" className={linkClasses}>
-            <span className="mr-3">💄</span>
-            Manage Cosmetics
+          {/* Seller Management */}
+          <NavLink to="/admin/sellers" className={linkClasses}>
+            <FiUsers className="mr-3" /> Manage Sellers
           </NavLink>
 
-          <NavLink to="/admin/electronicsmanagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            Manage Electronics
+          {/* Buyer Management */}
+          <NavLink to="/admin/buyers" className={linkClasses}>
+            <FiUsers className="mr-3" /> Manage Buyers
           </NavLink>
 
-          <NavLink to="/admin/sportsmanagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            Manage Sports
+          {/* Product Management */}
+          <NavLink to="/admin/products" className={linkClasses}>
+            <FiBox className="mr-3" /> Manage Products
           </NavLink>
 
-          <NavLink to="/admin/OrdersManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            Manage Orders
+          {/* Orders Management */}
+          <NavLink to="/admin/orders" className={linkClasses}>
+            <FiShoppingCart className="mr-3" /> Manage Orders
           </NavLink>
 
-          <NavLink to="/admin/NotificationsManagement" className={linkClasses}>
-            <span className="mr-3">📱</span>
-            Manage Notifications
+          {/* Analytics */}
+          <NavLink to="/admin/analytics" className={linkClasses}>
+            <FiBarChart2 className="mr-3" /> Analytics
           </NavLink>
 
-          <NavLink to="/admin/UserManagement" className={linkClasses}>
-            <span className="mr-3">⚙️</span>
-            Users
+          {/* Earnings */}
+          <NavLink to="/admin/earnings" className={linkClasses}>
+            <FiDollarSign className="mr-3" /> Earnings
           </NavLink>
 
-          <NavLink to="/admin/Reports" className={linkClasses}>
-            <span className="mr-3">⚙️</span>
-            Reports
+          {/* Notifications */}
+          <NavLink to="/admin/notifications" className={linkClasses}>
+            <FiBell className="mr-3" /> Notifications
           </NavLink>
 
+          {/* Reports */}
+          <NavLink to="/admin/reports" className={linkClasses}>
+            <FiFileText className="mr-3" /> Reports
+          </NavLink>
         </nav>
       </div>
 
@@ -68,8 +86,7 @@ export default function AdminSidebar() {
         onClick={handleLogout}
         className="flex items-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors duration-200"
       >
-        <span className="mr-3">🚪</span>
-        Logout
+        <FiLogOut className="mr-3" /> Logout
       </button>
     </aside>
   );

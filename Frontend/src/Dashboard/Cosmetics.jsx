@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Products from "../pages/Products";
+import Products from "../pages/Buyers";
 
 const Cosmetics = ({ addToCart }) => {
   const [cosmetics, setCosmetics] = useState([]);
@@ -37,8 +37,8 @@ const Cosmetics = ({ addToCart }) => {
   const filteredProducts =
     activeCategory === "all"
       ? cosmetics
-      : cosmetics.filter((p) =>
-          p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
+      : cosmetics.filter(
+          (p) => p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
         );
 
   if (loading) {

@@ -7,10 +7,11 @@ name = "pypi"
 flask = "*"
 flask-sqlalchemy = "*"
 flask-migrate = "*"
-flask-jwt-extended = "*"
 flask-bcrypt = "*"
 flask-cors = "*"
 flask-mail = "*"
+flask-session = "*"
+flask-jwt-extended = "*"
 
 [dev-packages]
 

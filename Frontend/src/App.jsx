@@ -5,22 +5,31 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 // Public Pages
 import Home from "./pages/Home";
 import About from "./pages/About";
-import Login from "./pages/Login";
+import Categories from "./pages/Categories";
+import Deals from "./pages/Deals";
+import Contact from "./pages/Contact";
+import BuyerLogin from "./pages/BuyerLogin";
+import SellerLogin from "./pages/SellerLogin";
 import Register from "./pages/Register";
-import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import ViewOrders from "./pages/ViewOrders";
 
-// Sellers Dashboard
-import SellerLayout from "./SellerDashboard/SellerLayout";
-import SellerHome from "./SellerDashboard/SellerHome";
-import Profile from "./SellerDashboard/Profile";
-import Settingss from "./SellerDashboard/Settingss";
+// Seller Dashboard Imports
+import SellerDashboardLayout from "./sellers/SellerDashboardLayout";
+import SellerHome from "./sellers/SellerHome";
+import Sellerclothes from "./sellers/Sellerclothes";
+import SellerCosmetics from "./sellers/SellerCosmetics";
+import SellerElectronics from "./sellers/SellerElectronics";
+import SellerSports from "./sellers/SellerSports";
+import SellerOrders from "./sellers/SellerOrders";
+import SellerAnalytics from "./sellers/SellerAnalytics";
+import SellerEarnings from "./sellers/SellerEarnings";
+import SellerNotifications from "./sellers/SellerNotifications";
+import SellerProfile from "./sellers/SellerProfile";
 
 // User Dashboard
 import DashboardLayout from "./Dashboard/DashboardLayout";
@@ -29,21 +38,23 @@ import Clothes from "./Dashboard/Clothes";
 import Cosmetics from "./Dashboard/Cosmetics";
 import Electronics from "./Dashboard/Electronics";
 import Sports from "./Dashboard/Sports";
+import Cart from "./Dashboard/Cart";
 import Profilee from "./Dashboard/Profilee";
 import Notifications from "./Dashboard/Notifications";
 
 // Admin Dashboard
 import AdminDashboardLayout from "./admin/AdminDashboardLayout";
-import ClothesManagement from "./admin/ClothesManagement";
-import CosmeticsManagement from "./admin/CosmeticsManagement";
-import ElectronicsManagement from "./admin/ElectronicsManagement";
+import AdminHome from "./admin/AdminHome";
+import SellersManagement from "./admin/SellersManagement";
+import BuyersManagement from "./admin/BuyersManagement";
+import ProductsManagement from "./admin/ProductsManagement";
 import OrdersManagement from "./admin/OrdersManagement";
-import UserManagement from "./admin/UserManagement";
-import SportsManagement from "./admin/SportsManagement";
+import Analytics from "./admin/Analytics";
+import Earnings from "./admin/Earnings";
 import NotificationsManagement from "./admin/NotificationsManagement";
 import Reports from "./admin/Reports";
 
-// ✅ Layout wrapper with Navbar & Footer
+// ✅ Layout wrapper ONLY for public pages
 function PublicLayout({ cartItems }) {
   return (
     <div className="flex flex-col min-h-screen">
@@ -59,13 +70,13 @@ function PublicLayout({ cartItems }) {
 function App() {
   const [cartItems, setCartItems] = useState([]);
 
-  // 🛍️ Dynamic product state from backend
+  // 🛍️ Dynamic product state
   const [clothes, setClothes] = useState([]);
   const [electronics, setElectronics] = useState([]);
   const [cosmetics, setCosmetics] = useState([]);
   const [sports, setSports] = useState([]);
 
-  // 🔁 Fetch each category from backend
+  // 🔁 Fetch categories
   useEffect(() => {
     const fetchCategory = async (endpoint, setter) => {
       try {
@@ -99,20 +110,10 @@ function App() {
     });
   };
 
-  const removeFromCart = (id) =>
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-
-  const updateQuantity = (id, q) =>
-    setCartItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: q } : i))
-    );
-
-  const clearCart = () => setCartItems([]);
-
   return (
     <AuthProvider>
       <Routes>
-        {/* 🌍 Public layout */}
+        {/* 🌍 Public layout (only Navbar + Footer here) */}
         <Route element={<PublicLayout cartItems={cartItems} />}>
           <Route
             path="/"
@@ -125,87 +126,71 @@ function App() {
                 addToCart={addToCart}
               />
             }
+            Contact
           />
           <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/buyer-login" element={<BuyerLogin />} />
+          <Route path="/seller-login" element={<SellerLogin />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/cart"
-            element={
-              <Cart
-                cartItems={cartItems}
-                removeFromCart={removeFromCart}
-                updateQuantity={updateQuantity}
-                clearCart={clearCart}
-              />
-            }
-          />
-          <Route
-            path="/checkout"
-            element={<Checkout cartItems={cartItems} clearCart={clearCart} />}
-          />
-
-          {/* 👤 User Dashboard (protected) */}
-          <Route
-            path="/products"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard-home" replace />} />
-            <Route path="dashboard-home" element={<DashboardHome />} />
-            <Route
-              path="clothes"
-              element={<Clothes products={clothes} addToCart={addToCart} />}
-            />
-            <Route
-              path="cosmetics"
-              element={<Cosmetics products={cosmetics} addToCart={addToCart} />}
-            />
-            <Route
-              path="electronics"
-              element={
-                <Electronics products={electronics} addToCart={addToCart} />
-              }
-            />
-            <Route
-              path="sports"
-              element={<Sports products={sports} addToCart={addToCart} />}
-            />
-            <Route path="Profilee" element={<Profilee />} />
-            <Route path="Notifications" element={<Notifications />} />
-          </Route>
-
+          <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
           <Route path="/orders" element={<ViewOrders />} />
         </Route>
 
-        {/* 🏬 Sellers routes with SellerLayout */}
-        <Route path="/Sellers" element={<SellerLayout />}>
-          <Route index element={<Navigate to="Seller-Home" replace />} />
-          <Route path="Seller-Home" element={<SellerHome />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="settingss" element={<Settingss />} />
+        {/* 👤 User Dashboard (protected, no duplicate navbar/footer) */}
+        <Route path="/Buyers" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="dashboard-home" replace />} />
+          <Route path="dashboard-home" element={<DashboardHome />} />
+          <Route
+            path="clothes"
+            element={<Clothes Buyers={clothes} addToCart={addToCart} />}
+          />
+          <Route
+            path="cosmetics"
+            element={<Cosmetics Buyers={cosmetics} addToCart={addToCart} />}
+          />
+          <Route
+            path="electronics"
+            element={<Electronics Buyers={electronics} addToCart={addToCart} />}
+          />
+          <Route
+            path="sports"
+            element={<Sports Buyers={sports} addToCart={addToCart} />}
+          />
+          <Route path="Profilee" element={<Profilee />} />
+          <Route path="cart" element={<Cart cartItems={cartItems} setCartItems={setCartItems} />} />
+          <Route path="Notifications" element={<Notifications />} />
         </Route>
 
-        {/* 🔐 Admin dashboard */}
+        {/* 🏬 Sellers dashboard */}
+        <Route path="/seller" element={<SellerDashboardLayout />}>
+          <Route index element={<Navigate to="dashboard-home" replace />} />
+          <Route path="dashboard-home" element={<SellerHome />} />
+          <Route path="clothes" element={<Sellerclothes />} />
+          <Route path="cosmetics" element={<SellerCosmetics />} />
+          <Route path="electronics" element={<SellerElectronics />} />
+          <Route path="sports" element={<SellerSports />} />
+          <Route path="orders" element={<SellerOrders />} />
+          <Route path="analytics" element={<SellerAnalytics />} />
+          <Route path="earnings" element={<SellerEarnings />} />
+          <Route path="notifications" element={<SellerNotifications />} />
+          <Route path="profile-settings" element={<SellerProfile />} />
+        </Route>
+
+        {/* ===== Admin Routes ===== */}
         <Route path="/admin" element={<AdminDashboardLayout />}>
-          <Route index element={<ClothesManagement />} />
-          <Route path="clothesmanagement" element={<ClothesManagement />} />
-          <Route path="cosmeticsmanagement" element={<CosmeticsManagement />} />
-          <Route
-            path="electronicsmanagement"
-            element={<ElectronicsManagement />}
-          />
-          <Route path="sportsmanagement" element={<SportsManagement />} />
-          <Route path="ordersmanagement" element={<OrdersManagement />} />
-          <Route
-            path="NotificationsManagement"
-            element={<NotificationsManagement />}
-          />
-          <Route path="usermanagement" element={<UserManagement />} />
-          <Route path="Reports" element={<Reports />} />
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<AdminHome />} />
+          <Route path="sellers" element={<SellersManagement />} />
+          <Route path="buyers" element={<BuyersManagement />} />
+          <Route path="products" element={<ProductsManagement />} />
+          <Route path="orders" element={<OrdersManagement />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="earnings" element={<Earnings />} />
+          <Route path="notifications" element={<NotificationsManagement />} />
+          <Route path="reports" element={<Reports />} />
         </Route>
 
         {/* 🚫 Catch-all redirect */}

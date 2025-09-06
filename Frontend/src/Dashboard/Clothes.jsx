@@ -1,9 +1,10 @@
-import { useState, useMemo,useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
-import Products from "../pages/Products";
+import Products from "../pages/Buyers";
 
-const Clothes = ({ addToCart }) => { // ⬅ remove products from props
-   const [clothes, setClothes] = useState([]);
+const Clothes = ({ addToCart }) => {
+  // ⬅ remove products from props
+  const [clothes, setClothes] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all"); // default category
   const [priceFilter, setPriceFilter] = useState("all"); // default price filter
 
@@ -24,17 +25,18 @@ const Clothes = ({ addToCart }) => { // ⬅ remove products from props
   }, []);
 
   // Memoized filters for better performance
-const [allClothes, menClothes, womenClothes, childrenClothes] = useMemo(() => {
-  const clothesItems = clothes.filter(
-    (p) => p.category?.toLowerCase() === "clothes"
-  );
-  return [
-    clothesItems,
-    clothesItems.filter((p) => p.subCategory?.toLowerCase() === "men"),
-    clothesItems.filter((p) => p.subCategory?.toLowerCase() === "women"),
-    clothesItems.filter((p) => p.subCategory?.toLowerCase() === "children"),
-  ];
-}, [clothes]);
+  const [allClothes, menClothes, womenClothes, childrenClothes] =
+    useMemo(() => {
+      const clothesItems = clothes.filter(
+        (p) => p.category?.toLowerCase() === "clothes"
+      );
+      return [
+        clothesItems,
+        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "men"),
+        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "women"),
+        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "children"),
+      ];
+    }, [clothes]);
 
   // Apply active filters
   const filteredProducts = useMemo(() => {

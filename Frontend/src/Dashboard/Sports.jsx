@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Products from "../pages/Products";
+import Products from "../pages/Buyers";
 
 const Sports = ({ addToCart }) => {
   const [sportsProducts, setSportsProducts] = useState([]);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Products from "../pages/Products";
+import Products from "../pages/Buyers";
 
 const Electronics = ({ addToCart }) => {
   const [electronicsProducts, setElectronicsProducts] = useState([]);
@@ -9,21 +9,20 @@ const Electronics = ({ addToCart }) => {
   const [sortOption, setSortOption] = useState("featured");
 
   useEffect(() => {
-  const fetchElectronics = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/electronics");
-      if (!res.ok) throw new Error("Failed to fetch electronics");
-      const data = await res.json();
-      console.log("Fetched Electronics:", data); // 👈 Add here
-      setElectronicsProducts(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const fetchElectronics = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/electronics");
+        if (!res.ok) throw new Error("Failed to fetch electronics");
+        const data = await res.json();
+        console.log("Fetched Electronics:", data); // 👈 Add here
+        setElectronicsProducts(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  fetchElectronics();
-}, []);
-
+    fetchElectronics();
+  }, []);
 
   const brands = [
     ...new Set(electronicsProducts.map((p) => p.brand?.trim()).filter(Boolean)),
@@ -35,10 +34,19 @@ const Electronics = ({ addToCart }) => {
     const normalized = subCategory.trim().toLowerCase();
 
     if (normalized.includes("laptop")) return "laptop";
-    if (normalized.includes("tv") || normalized.includes("television")) return "television";
-    if (normalized.includes("mobile") || normalized.includes("phone") || normalized.includes("smartphone"))
+    if (normalized.includes("tv") || normalized.includes("television"))
+      return "television";
+    if (
+      normalized.includes("mobile") ||
+      normalized.includes("phone") ||
+      normalized.includes("smartphone")
+    )
       return "smartphone";
-    if (normalized.includes("audio") || normalized.includes("speaker") || normalized.includes("headphone"))
+    if (
+      normalized.includes("audio") ||
+      normalized.includes("speaker") ||
+      normalized.includes("headphone")
+    )
       return "audio";
 
     return normalized;
