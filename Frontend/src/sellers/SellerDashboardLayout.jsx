@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import SellerSidebar from "../components/SellerSidebar";
 
-import Navbar from "../components/Navbar";
+import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 const SellerDashboardLayout = () => {
@@ -10,9 +10,11 @@ const SellerDashboardLayout = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Fixed Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50">
-        <Navbar />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+        <Header         
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          userType="seller"
+        />
       </header>
 
       {/* Main Section (Sidebar + Content) */}

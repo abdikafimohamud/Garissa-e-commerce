@@ -6,25 +6,40 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = "http://localhost:5000"; // ✅ Single base URL
+  const API_URL = "http://localhost:5000";
 
   // ✅ Fetch current user when app loads
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
+        console.log("Fetching current user from backend...");
         const res = await fetch(`${API_URL}/get_current_user`, {
           method: "GET",
           credentials: "include", // important for session cookie
         });
 
+        console.log("Response status:", res.status);
+        
         if (res.ok) {
           const data = await res.json();
-          setUser(data.user || null);
+          console.log("User data received:", data);
+          
+          if (data.user) {
+            setUser(data.user);
+          } else {
+            console.log("No user object in response");
+            setUser(null);
+          }
+        } else if (res.status === 401) {
+          // 401 is normal when no user is logged in
+          console.log("User is not authenticated (normal behavior)");
+          setUser(null);
         } else {
+          console.log("Unexpected error status:", res.status);
           setUser(null);
         }
       } catch (err) {
-        console.error("Error fetching current user:", err);
+        console.error("Network error fetching current user:", err);
         setUser(null);
       } finally {
         setLoading(false);
@@ -35,12 +50,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ✅ Login
-  const login = async (email, password) => {
+  const login = async (email, password, accountType) => {
     if (!email || !password)
       return { success: false, message: "Enter both email and password" };
 
     try {
-      const res = await fetch(`${API_URL}/login`, {
+      const endpoint = accountType === 'seller' ? '/login/seller' : '/login/buyer';
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -51,7 +67,7 @@ export const AuthProvider = ({ children }) => {
 
       if (res.ok) {
         setUser(data.user);
-        return { success: true };
+        return { success: true, redirect: data.redirect, user: data.user };
       } else {
         return { success: false, message: data.error || "Login failed" };
       }
@@ -62,24 +78,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ Register
-  const register = async (name, email, password) => {
+  const register = async (userData) => {
     try {
       const res = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify(userData),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        return { success: true };
+        // After registration, try to automatically log the user in
+        const loginResult = await login(userData.email, userData.password, userData.accountType || 'buyer');
+        if (loginResult.success) {
+          return { success: true, redirect: data.redirect || "/" };
+        }
+        return { success: true, redirect: data.redirect || "/login", message: "Registration successful. Please login." };
       } else {
-        const error = await res.json();
         return {
           success: false,
-          message: error.message || "Registration failed",
+          message: data.error || "Registration failed",
         };
       }
     } catch (err) {
@@ -100,7 +120,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         return { success: true };
       } else {
-        return { success: false, message: "Logout failed" };
+        const data = await res.json();
+        return { success: false, message: data.error || "Logout failed" };
       }
     } catch (err) {
       console.error("Logout error:", err);
@@ -108,8 +129,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Manual user setter (for testing/development)
+  const setUserData = (userData) => {
+    setUser(userData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      setUser: setUserData 
+    }}>
       {children}
     </AuthContext.Provider>
   );

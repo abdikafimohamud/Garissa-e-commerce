@@ -73,11 +73,7 @@ export default function AdminSidebar() {
           <NavLink to="/admin/notifications" className={linkClasses}>
             <FiBell className="mr-3" /> Notifications
           </NavLink>
-
-          {/* Reports */}
-          <NavLink to="/admin/reports" className={linkClasses}>
-            <FiFileText className="mr-3" /> Reports
-          </NavLink>
+          
         </nav>
       </div>
 

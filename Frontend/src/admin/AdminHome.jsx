@@ -87,12 +87,6 @@ export default function AdminHome() {
       path: '/admin/notifications'
     },
     { 
-      title: 'Reports', 
-      icon: <FaFileAlt className="text-xl" />, 
-      color: 'bg-green-500',
-      path: '/admin/reports'
-    },
-    { 
       title: 'Orders', 
       icon: <FaCog className="text-xl" />, 
       color: 'bg-gray-500',
@@ -117,10 +111,10 @@ export default function AdminHome() {
         <div className="mt-4 md:mt-0">
           <button 
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center"
-            onClick={() => navigate('/admin/reports')}
+            onClick={() => navigate('/admin/Earnings')}
           >
             <FaChartLine className="mr-2" />
-            Generate Report
+            Generate Earnings
           </button>
         </div>
       </div>

@@ -162,20 +162,38 @@ def logout_user():
 # =========================
 # GET CURRENT USER
 # =========================
+# In your get_current_user route, add more debugging:
 @auth_bp.route('/get_current_user', methods=['GET'])
 def get_current_user():
     try:
         user_id = session.get('user_id')
+        print(f"DEBUG: Session user_id = {user_id}")
+        print(f"DEBUG: All session data = {dict(session)}")
+        
         if not user_id:
+            print("DEBUG: No user_id in session - user not logged in")
             return jsonify({'error': 'Unauthorized'}), 401
 
         user = User.query.get(user_id)
         if not user:
+            print(f"DEBUG: User with id {user_id} not found in database")
+            session.clear()
             return jsonify({'error': 'User not found'}), 404
 
+        # Check what fields the user object has
+        print(f"DEBUG: User object has firstname: {hasattr(user, 'firstname')}")
+        if hasattr(user, 'firstname'):
+            print(f"DEBUG: User firstname = {user.firstname}")
+        
+        user_dict = user.to_dict()
+        print(f"DEBUG: User.to_dict() returns: {user_dict}")
+        
         return jsonify({
-            "user": user.to_dict()
+            "user": user_dict
         }), 200
 
     except Exception as e:
+        print(f"ERROR in get_current_user: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500

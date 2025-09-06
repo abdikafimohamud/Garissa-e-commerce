@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 // Components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Header from "./components/Header";
 import { AuthProvider } from "./context/AuthContext";
 
 // Public Pages
@@ -52,7 +53,7 @@ import OrdersManagement from "./admin/OrdersManagement";
 import Analytics from "./admin/Analytics";
 import Earnings from "./admin/Earnings";
 import NotificationsManagement from "./admin/NotificationsManagement";
-import Reports from "./admin/Reports";
+
 
 // ✅ Layout wrapper ONLY for public pages
 function PublicLayout({ cartItems }) {
@@ -134,6 +135,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/buyer-login" element={<BuyerLogin />} />
           <Route path="/seller-login" element={<SellerLogin />} />
+          <Route path="/ header" element={< Header />} />
           <Route path="/register" element={<Register />} />
           <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
           <Route path="/orders" element={<ViewOrders />} />
@@ -190,7 +192,6 @@ function App() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="earnings" element={<Earnings />} />
           <Route path="notifications" element={<NotificationsManagement />} />
-          <Route path="reports" element={<Reports />} />
         </Route>
 
         {/* 🚫 Catch-all redirect */}
