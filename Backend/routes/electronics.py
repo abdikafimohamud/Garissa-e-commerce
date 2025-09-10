@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
-from models.electronics import Electronics
+from app.models.electronics import Electronics
 from datetime import datetime
 
 electronics_bp = Blueprint('electronics', __name__)

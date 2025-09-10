@@ -1,21 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-  const ClothesManagement = () => {
-  const [formData, setFormData] = useState({name: '',price: '',description: '',category: 'clothes',subCategory: 'men',imageUrl: '',stock: '',rating: 0,isNew: false,isBestSeller: false});
+const ClothesManagement = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    description: "",
+    category: "clothes",
+    subcategory: "men",
+    imageUrl: "",
+    stock: "",
+    rating: 0,
+    isNew: false,
+    isBestSeller: false,
+  });
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const API_URL = 'http://localhost:5000/clothes';
+  const API_URL = "http://localhost:5000/api/products"; // Fixed endpoint
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch products');
+        if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
-        const clothesProducts = data.filter(p => p.category === 'clothes');
+        const clothesProducts = data.products ? 
+          data.products.filter((p) => p.category === "clothes") : 
+          data.filter((p) => p.category === "clothes");
         setProducts(clothesProducts);
       } catch (error) {
-        console.error('Error fetching products: ', error);
+        console.error("Error fetching products: ", error);
       }
     };
 
@@ -26,7 +39,7 @@ import { useState, useEffect } from 'react';
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     });
   };
 
@@ -37,52 +50,59 @@ import { useState, useEffect } from 'react';
       ...formData,
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock),
-      rating: parseFloat(formData.rating)
+      rating: parseFloat(formData.rating),
     };
 
     try {
       if (editingId) {
         const response = await fetch(`${API_URL}/${editingId}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(productData)
+          body: JSON.stringify(productData),
+          credentials: "include",
         });
 
-        if (!response.ok) throw new Error('Failed to update product');
+        if (!response.ok) throw new Error("Failed to update product");
 
-        setProducts(products.map(p => p.id === editingId ? { ...p, ...productData } : p));
+        const updatedProduct = await response.json();
+        setProducts(
+          products.map((p) =>
+            p.id === editingId ? updatedProduct.product : p
+          )
+        );
         setEditingId(null);
       } else {
         const response = await fetch(API_URL, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(productData)
+          body: JSON.stringify(productData),
+          credentials: "include",
         });
 
-        if (!response.ok) throw new Error('Failed to add product');
+        if (!response.ok) throw new Error("Failed to add product");
 
         const newProduct = await response.json();
-        setProducts([...products, newProduct]);
+        setProducts([...products, newProduct.product]);
       }
 
       setFormData({
-        name: '',
-        price: '',
-        description: '',
-        category: 'clothes',
-        subCategory: 'men',
-        imageUrl: '',
-        stock: '',
+        name: "",
+        price: "",
+        description: "",
+        category: "clothes",
+        subcategory: "men",
+        imageUrl: "",
+        stock: "",
         rating: 0,
         isNew: false,
-        isBestSeller: false
+        isBestSeller: false,
       });
     } catch (error) {
-      console.error('Error saving product: ', error);
+      console.error("Error saving product: ", error);
     }
   };
 
@@ -91,23 +111,24 @@ import { useState, useEffect } from 'react';
       ...product,
       price: product.price.toString(),
       stock: product.stock.toString(),
-      rating: product.rating.toString()
+      rating: product.rating.toString(),
     });
     setEditingId(product.id);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         const response = await fetch(`${API_URL}/${id}`, {
-          method: 'DELETE'
+          method: "DELETE",
+          credentials: "include",
         });
 
-        if (!response.ok) throw new Error('Failed to delete product');
+        if (!response.ok) throw new Error("Failed to delete product");
 
-        setProducts(products.filter(p => p.id !== id));
+        setProducts(products.filter((p) => p.id !== id));
       } catch (error) {
-        console.error('Error deleting product: ', error);
+        console.error("Error deleting product: ", error);
       }
     }
   };
@@ -118,7 +139,7 @@ import { useState, useEffect } from 'react';
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-xl font-semibold mb-4">
-          {editingId ? 'Edit Product' : 'Add New Product'}
+          {editingId ? "Edit Product" : "Add New Product"}
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -219,15 +240,17 @@ import { useState, useEffect } from 'react';
               />
             </div>
 
-            {/* ✅ Image Preview */}
+            {/* Image Preview */}
             {formData.imageUrl && (
               <div className="md:col-span-2">
-                <label className="block text-gray-700 mb-2">Image Preview</label>
+                <label className="block text-gray-700 mb-2">
+                  Image Preview
+                </label>
                 <img
                   src={formData.imageUrl}
                   alt="Preview"
                   className="w-32 h-32 object-cover border rounded"
-                  onError={(e) => (e.target.style.display = 'none')}
+                  onError={(e) => (e.target.style.display = "none")}
                 />
               </div>
             )}
@@ -248,7 +271,7 @@ import { useState, useEffect } from 'react';
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            {editingId ? 'Update Product' : 'Add Product'}
+            {editingId ? "Update Product" : "Add Product"}
           </button>
           {editingId && (
             <button
@@ -256,16 +279,16 @@ import { useState, useEffect } from 'react';
               onClick={() => {
                 setEditingId(null);
                 setFormData({
-                  name: '',
-                  price: '',
-                  description: '',
-                  category: 'clothes',
-                  subCategory: 'men',
-                  imageUrl: '',
-                  stock: '',
+                  name: "",
+                  price: "",
+                  description: "",
+                  category: "clothes",
+                  subcategory: "men",
+                  imageUrl: "",
+                  stock: "",
                   rating: 0,
                   isNew: false,
-                  isBestSeller: false
+                  isBestSeller: false,
                 });
               }}
               className="px-4 py-2 ml-2 bg-gray-500 text-white rounded hover:bg-gray-600"
@@ -277,7 +300,9 @@ import { useState, useEffect } from 'react';
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Current Clothing Products</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Current Clothing Products
+        </h2>
         {products.length === 0 ? (
           <p>No products found.</p>
         ) : (
@@ -313,10 +338,14 @@ import { useState, useEffect } from 'react';
                     <td className="py-2 px-4 border-b">
                       <div className="flex flex-wrap gap-1">
                         {product.isNew && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">New</span>
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                            New
+                          </span>
                         )}
                         {product.isBestSeller && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Bestseller</span>
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                            Bestseller
+                          </span>
                         )}
                       </div>
                     </td>

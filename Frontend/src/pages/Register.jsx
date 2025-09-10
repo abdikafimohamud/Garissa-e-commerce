@@ -8,7 +8,7 @@ const Register = () => {
     email: "",
     password: "",
     phone: "",
-    accountType: "buyer" // Default account type
+    accountType: "buyer", // Default account type
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -41,7 +41,7 @@ const Register = () => {
     try {
       const res = await fetch(" http://127.0.0.1:5000/register", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         credentials: "include", // Important for cookies/sessions
@@ -51,7 +51,7 @@ const Register = () => {
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
-          accountType: formData.accountType
+          accountType: formData.accountType,
         }),
       });
 
@@ -86,8 +86,16 @@ const Register = () => {
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
 
-        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-        {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {success}
+          </div>
+        )}
 
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">First Name</label>

@@ -5,8 +5,8 @@ const SellerElectronics = () => {
     name: '',
     price: '',
     description: '',
-    category: 'Electronics',
-    subCategory: 'smartphone',
+    category: 'electronics',
+    subcategory: 'smartphone',
     brand: '',
     imageUrl: '',
     stock: '',
@@ -19,17 +19,59 @@ const SellerElectronics = () => {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const API_URL = 'http://localhost:5000/electronics';
+  const [loading, setLoading] = useState(true);
+  const API_URL = 'http://localhost:5000/api/products';
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch products');
-        const data = await response.json();
-        setProducts(data);
+        setLoading(true);
+        // First try the electronics-specific endpoint
+        const res = await fetch("http://localhost:5000/api/products/electronics");
+        
+        // If the specific endpoint doesn't exist, fall back to filtering all products
+        if (res.status === 404) {
+          console.log("Electronics endpoint not found, filtering all products");
+          const allRes = await fetch(API_URL);
+          if (!allRes.ok) throw new Error('Failed to fetch products');
+          const allData = await allRes.json();
+          
+          // Filter only electronics products
+          let electronicsData = [];
+          if (Array.isArray(allData)) {
+            electronicsData = allData.filter(p => 
+              p.category === 'electronics' || 
+              p.category === 'Electronics' ||
+              (p.subcategory && ['smartphone', 'laptop', 'television', 'audio'].includes(p.subcategory.toLowerCase()))
+            );
+          } else if (allData.products && Array.isArray(allData.products)) {
+            electronicsData = allData.products.filter(p => 
+              p.category === 'electronics' || 
+              p.category === 'Electronics' ||
+              (p.subcategory && ['smartphone', 'laptop', 'television', 'audio'].includes(p.subcategory.toLowerCase()))
+            );
+          }
+          
+          setProducts(electronicsData);
+        } else if (!res.ok) {
+          throw new Error("Failed to fetch electronics");
+        } else {
+          const data = await res.json();
+          
+          // Ensure data is an array
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else if (data.products && Array.isArray(data.products)) {
+            setProducts(data.products);
+          } else {
+            throw new Error("Invalid data format received from API");
+          }
+        }
       } catch (error) {
         console.error('Error fetching products: ', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -68,7 +110,7 @@ const SellerElectronics = () => {
         if (!res.ok) throw new Error('Failed to update product');
 
         const updatedProduct = await res.json();
-        setProducts(products.map(p => p.id === editingId ? updatedProduct : p));
+        setProducts(products.map(p => (p.id === editingId || p._id === editingId) ? updatedProduct : p));
         setEditingId(null);
       } else {
         const res = await fetch(API_URL, {
@@ -89,8 +131,8 @@ const SellerElectronics = () => {
         name: '',
         price: '',
         description: '',
-        category: 'Electronics',
-        subCategory: 'smartphone',
+        category: 'electronics',
+        subcategory: 'smartphone',
         brand: '',
         imageUrl: '',
         stock: '',
@@ -101,6 +143,7 @@ const SellerElectronics = () => {
       });
     } catch (error) {
       console.error('Error saving product: ', error);
+      alert('Error saving product: ' + error.message);
     }
   };
 
@@ -111,7 +154,7 @@ const SellerElectronics = () => {
       stock: product.stock.toString(),
       rating: product.rating?.toString() || '0'
     });
-    setEditingId(product.id);
+    setEditingId(product.id || product._id);
   };
 
   const handleDelete = async (id) => {
@@ -123,18 +166,20 @@ const SellerElectronics = () => {
 
         if (!response.ok) throw new Error('Failed to delete product');
 
-        setProducts(products.filter(p => p.id !== id));
+        setProducts(products.filter(p => (p.id !== id && p._id !== id)));
       } catch (error) {
         console.error('Error deleting product: ', error);
+        alert('Error deleting product: ' + error.message);
       }
     }
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Ensure products is an array before filtering
+  const filteredProducts = Array.isArray(products) ? products.filter(product =>
+    (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  ) : [];
 
   const categories = [
     { id: 'smartphone', name: 'Smartphone' },
@@ -142,6 +187,15 @@ const SellerElectronics = () => {
     { id: 'television', name: 'Television' },
     { id: 'audio', name: 'Audio' }
   ];
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p className="text-lg">Loading electronics products...</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Electronics Management</h1>
@@ -202,8 +256,8 @@ const SellerElectronics = () => {
             <div>
               <label className="block text-gray-700 mb-1">Category*</label>
               <select
-                name="subCategory"
-                value={formData.subCategory}
+                name="subcategory"
+                value={formData.subcategory}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded"
                 required
@@ -293,8 +347,8 @@ const SellerElectronics = () => {
                       name: '',
                       price: '',
                       description: '',
-                      category: 'Electronics',
-                      subCategory: 'smartphone',
+                      category: 'electronics',
+                      subcategory: 'smartphone',
                       brand: '',
                       imageUrl: '',
                       stock: '',
@@ -337,7 +391,7 @@ const SellerElectronics = () => {
         </div>
 
         {filteredProducts.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">No products found</p>
+          <p className="text-center py-8 text-gray-500">No electronics products found</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
@@ -355,20 +409,23 @@ const SellerElectronics = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product.id || product._id} className="hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <img 
                         src={product.imageUrl} 
                         alt={product.name} 
                         className="w-12 h-12 object-cover rounded"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-product.jpg';
+                        }}
                       />
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-gray-900">{product.name}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{product.brand}</td>
                     <td className="py-4 px-4 text-sm text-gray-500 capitalize">
-                      {product.subCategory}
+                      {product.subcategory || product.subCategory}
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">${product.price.toFixed(2)}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">${product.price?.toFixed(2)}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{product.stock}</td>
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1">
@@ -392,7 +449,7 @@ const SellerElectronics = () => {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDelete(product.id || product._id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Delete

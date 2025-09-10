@@ -14,17 +14,38 @@ const Cosmetics = ({ addToCart }) => {
     { id: "haircare", name: "Haircare", icon: "💆‍♀️" },
   ];
 
-  // Fetch cosmetics from backend
+  // Fetch only cosmetics products from backend
   useEffect(() => {
     const fetchCosmetics = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://127.0.0.1:5000/cosmetics");
-        if (!res.ok) throw new Error("Failed to fetch cosmetics");
-        const data = await res.json();
-        setCosmetics(data);
+        setError(null);
+        
+        // Always fetch all products and filter for cosmetics
+        const allRes = await fetch("http://127.0.0.1:5000/api/products");
+        if (!allRes.ok) throw new Error("Failed to fetch products");
+        const allData = await allRes.json();
+        
+        // Filter only cosmetics products
+        let cosmeticsData = [];
+        if (Array.isArray(allData)) {
+          cosmeticsData = allData.filter(p => 
+            p.category === 'cosmetics' || 
+            p.category === 'Cosmetics' ||
+            (p.subcategory && ['makeup', 'skincare', 'haircare'].includes(p.subcategory.toLowerCase()))
+          );
+        } else if (allData.products && Array.isArray(allData.products)) {
+          cosmeticsData = allData.products.filter(p => 
+            p.category === 'cosmetics' || 
+            p.category === 'Cosmetics' ||
+            (p.subcategory && ['makeup', 'skincare', 'haircare'].includes(p.subcategory.toLowerCase()))
+          );
+        }
+        
+        setCosmetics(cosmeticsData);
       } catch (err) {
         setError(err.message || "Something went wrong");
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -33,13 +54,17 @@ const Cosmetics = ({ addToCart }) => {
     fetchCosmetics();
   }, []);
 
-  // Filtered products based on active category
-  const filteredProducts =
-    activeCategory === "all"
+  // Filtered products based on active category - ensure it's always an array
+  const filteredProducts = React.useMemo(() => {
+    if (!Array.isArray(cosmetics)) return [];
+    
+    return activeCategory === "all"
       ? cosmetics
       : cosmetics.filter(
-          (p) => p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
+          (p) => p.subcategory?.toLowerCase() === activeCategory.toLowerCase() || 
+                 p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
         );
+  }, [cosmetics, activeCategory]);
 
   if (loading) {
     return (
@@ -87,13 +112,13 @@ const Cosmetics = ({ addToCart }) => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        {filteredProducts.length === 0 ? (
-          <div className="text-center text-gray-500">No products found.</div>
+        {!Array.isArray(filteredProducts) || filteredProducts.length === 0 ? (
+          <div className="text-center text-gray-500">No cosmetics products found.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <Products
-                key={product.id}
+                key={product.id || product._id}
                 product={product}
                 addToCart={addToCart}
               />

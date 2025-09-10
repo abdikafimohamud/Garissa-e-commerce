@@ -6,7 +6,7 @@ const SellerCosmetics = () => {
     price: '',
     description: '',
     category: 'cosmetics',
-    subCategory: 'makeup',
+    subcategory: 'makeup',
     brand: '',
     imageUrl: '',
     stock: '',
@@ -19,18 +19,30 @@ const SellerCosmetics = () => {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const API_URL = 'http://localhost:5000/cosmetics';
+  const [loading, setLoading] = useState(true);
+  const API_URL = 'http://localhost:5000/api/products';
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setLoading(true);
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Failed to fetch products');
         const data = await response.json();
-        const cosmeticsProducts = data.filter(p => p.category === 'cosmetics');
+        
+        // Handle different response formats
+        let cosmeticsProducts = [];
+        if (Array.isArray(data)) {
+          cosmeticsProducts = data.filter(p => p.category === 'cosmetics');
+        } else if (data.products && Array.isArray(data.products)) {
+          cosmeticsProducts = data.products.filter(p => p.category === 'cosmetics');
+        }
+        
         setProducts(cosmeticsProducts);
       } catch (error) {
         console.error('Error fetching products: ', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -67,7 +79,8 @@ const SellerCosmetics = () => {
         
         if (!response.ok) throw new Error('Failed to update product');
         
-        setProducts(products.map(p => p.id === editingId ? { ...p, ...productData } : p));
+        const updatedProduct = await response.json();
+        setProducts(products.map(p => p.id === editingId ? updatedProduct : p));
         setEditingId(null);
       } else {
         const response = await fetch(API_URL, {
@@ -84,12 +97,13 @@ const SellerCosmetics = () => {
         setProducts([...products, newProduct]);
       }
       
+      // Reset form
       setFormData({
         name: '',
         price: '',
         description: '',
         category: 'cosmetics',
-        subCategory: 'makeup',
+        subcategory: 'makeup',
         brand: '',
         imageUrl: '',
         stock: '',
@@ -100,6 +114,7 @@ const SellerCosmetics = () => {
       });
     } catch (error) {
       console.error('Error saving product: ', error);
+      alert('Error saving product: ' + error.message);
     }
   };
 
@@ -110,7 +125,7 @@ const SellerCosmetics = () => {
       stock: product.stock.toString(),
       rating: product.rating.toString()
     });
-    setEditingId(product.id);
+    setEditingId(product.id || product._id);
   };
 
   const handleDelete = async (id) => {
@@ -122,18 +137,27 @@ const SellerCosmetics = () => {
         
         if (!response.ok) throw new Error('Failed to delete product');
         
-        setProducts(products.filter(p => p.id !== id));
+        setProducts(products.filter(p => (p.id || p._id) !== id));
       } catch (error) {
         console.error('Error deleting product: ', error);
+        alert('Error deleting product: ' + error.message);
       }
     }
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p className="text-lg">Loading products...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -195,8 +219,8 @@ const SellerCosmetics = () => {
             <div>
               <label className="block text-gray-700 mb-1">Category*</label>
               <select
-                name="subCategory"
-                value={formData.subCategory}
+                name="subcategory"
+                value={formData.subcategory}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded"
                 required
@@ -285,7 +309,7 @@ const SellerCosmetics = () => {
                     price: '',
                     description: '',
                     category: 'cosmetics',
-                    subCategory: 'makeup',
+                    subcategory: 'makeup',
                     brand: '',
                     imageUrl: '',
                     stock: '',
@@ -345,20 +369,23 @@ const SellerCosmetics = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product.id || product._id} className="hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <img 
                         src={product.imageUrl} 
                         alt={product.name} 
                         className="w-12 h-12 object-cover rounded"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-product.jpg';
+                        }}
                       />
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-gray-900">{product.name}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{product.brand}</td>
                     <td className="py-4 px-4 text-sm text-gray-500 capitalize">
-                      {product.subCategory}
+                      {product.subcategory || product.subCategory}
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">${product.price.toFixed(2)}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">${product.price?.toFixed(2)}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{product.stock}</td>
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1">
@@ -382,7 +409,7 @@ const SellerCosmetics = () => {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDelete(product.id || product._id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Delete

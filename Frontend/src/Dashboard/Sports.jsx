@@ -7,17 +7,42 @@ const Sports = ({ addToCart }) => {
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchSports = async () => {
       try {
-        const res = await fetch("http://localhost:5000/sports");
-        if (!res.ok) throw new Error("Failed to fetch sports products");
-        const data = await res.json();
-        console.log("Fetched Sports:", data);
-        setSportsProducts(data);
+        setLoading(true);
+        setError(null);
+        
+        // Always fetch all products and filter for sports
+        const allRes = await fetch("http://localhost:5000/api/products");
+        if (!allRes.ok) throw new Error("Failed to fetch products");
+        const allData = await allRes.json();
+        
+        // Filter only sports products
+        let sportsData = [];
+        if (Array.isArray(allData)) {
+          sportsData = allData.filter(p => 
+            p.category === 'sports' || 
+            p.category === 'Sports' ||
+            (p.subcategory && ['t-shirts', 'football', 'shoes'].includes(p.subcategory.toLowerCase()))
+          );
+        } else if (allData.products && Array.isArray(allData.products)) {
+          sportsData = allData.products.filter(p => 
+            p.category === 'sports' || 
+            p.category === 'Sports' ||
+            (p.subcategory && ['t-shirts', 'football', 'shoes'].includes(p.subcategory.toLowerCase()))
+          );
+        }
+        
+        setSportsProducts(sportsData);
       } catch (err) {
-        console.error(err);
+        setError(err.message || "Something went wrong");
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -33,9 +58,9 @@ const Sports = ({ addToCart }) => {
     if (!subCategory) return null;
     const normalized = subCategory.trim().toLowerCase();
 
-    if (normalized.includes("t-shirt") || normalized.includes("shirt"))
+    if (normalized.includes("t-shirt") || normalized.includes("shirt") || normalized.includes("tshirt"))
       return "t-shirt";
-    if (normalized.includes("shoes") || normalized.includes("sneaker"))
+    if (normalized.includes("shoes") || normalized.includes("sneaker") || normalized.includes("footwear"))
       return "shoes";
     if (normalized.includes("football") || normalized.includes("soccer"))
       return "football";
@@ -47,7 +72,8 @@ const Sports = ({ addToCart }) => {
     .filter((product) => {
       const categoryMatch =
         activeCategory === "all" ||
-        normalizeSubCategory(product.subCategory) === activeCategory;
+        normalizeSubCategory(product.subCategory) === activeCategory ||
+        normalizeSubCategory(product.subcategory) === activeCategory;
 
       const priceMatch =
         product.price >= priceRange[0] && product.price <= priceRange[1];
@@ -79,6 +105,22 @@ const Sports = ({ addToCart }) => {
     { id: "football", name: "Football", icon: "⚽" },
   ];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg font-semibold text-gray-600">Loading sports products...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg font-semibold text-red-600">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
@@ -101,7 +143,7 @@ const Sports = ({ addToCart }) => {
                 onClick={() => setActiveCategory(category.id)}
                 className={`flex items-center px-4 py-2 rounded-full transition-colors ${
                   activeCategory === category.id
-                    ? "bg-green-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white shadow-md"
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -205,7 +247,7 @@ const Sports = ({ addToCart }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => (
                   <Products
-                    key={product.id}
+                    key={product.id || product._id}
                     product={product}
                     addToCart={addToCart}
                     badgeText={
@@ -223,7 +265,7 @@ const Sports = ({ addToCart }) => {
               <div className="text-center py-16 bg-white rounded-xl shadow-sm">
                 <div className="text-6xl mb-4">🏃‍♂️</div>
                 <h3 className="text-xl font-medium text-gray-700 mb-2">
-                  No products found
+                  No sports products found
                 </h3>
                 <p className="text-gray-500 mb-4">
                   Try adjusting your filters or browse other categories

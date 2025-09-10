@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // Adjust path as needed
 
 const BuyerLogin = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const BuyerLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,26 +22,18 @@ const BuyerLogin = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/login/buyer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      // ✅ CORRECT: Remove the extra options object
+      const result = await login(formData.email, formData.password, "buyer");
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed. Please try again.");
-      } else {
+      if (result.success) {
         // Redirect to buyer dashboard upon successful login
-        navigate("/Buyers/dashboard-home");
+        navigate(result.redirect || "/Buyers/dashboard-home");
+      } else {
+        setError(result.message || "Login failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
       setError("Something went wrong. Please try again later.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }

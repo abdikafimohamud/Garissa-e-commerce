@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const SellerLogin = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const SellerLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Using the custom hook
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,26 +22,17 @@ const SellerLogin = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/login/seller", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed. Please try again.");
-      } else {
+      const result = await login(formData.email, formData.password, 'seller');
+      
+      if (result.success) {
         // Redirect to seller dashboard upon successful login
-        navigate("/seller/dashboard-home");
+        navigate(result.redirect || "/seller/dashboard-home");
+      } else {
+        setError(result.message || "Login failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
       setError("Something went wrong. Please try again later.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }

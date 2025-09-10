@@ -1,258 +1,260 @@
-// src/pages/Profile.jsx
-import { useState, useEffect } from "react";
-import { FiUser, FiLock, FiShield } from "react-icons/fi";
+import React, { useState, useEffect } from "react";
 
-export default function Profile() {
-  const [user, setUser] = useState(null);
-  const [profilePic, setProfilePic] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [activeTab, setActiveTab] = useState("profile"); // profile | security
-
-  const [formData, setFormData] = useState({
-    password: "",
-    newPassword: "",
-    twoFactor: false,
+export default function Profilee({ user, setUser }) {
+  const [profileData, setProfileData] = useState({
+    firstname: user?.firstname || "",
+    secondname: user?.secondname || "",
+    phone: user?.phone || "",
   });
 
-  // ✅ Fetch user on mount
+  const [profilePic, setProfilePic] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [securityMode, setSecurityMode] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  // password state
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // 🔑 Fetch current profile on mount
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchProfile = async () => {
       try {
-        const res = await fetch("http://localhost:5000/get_current_user", {
-          credentials: "include",
+        const res = await fetch("http://localhost:5000/profile", {
+          method: "GET",
+          credentials: "include", // ensure session cookie is sent
         });
+
         const data = await res.json();
-        setUser(data);
+        if (res.ok && data.user) {
+          setUser(data.user);
+          setProfileData({
+            firstname: data.user.firstname || "",
+            secondname: data.user.secondname || "",
+            phone: data.user.phone || "",
+          });
+        } else {
+          setMessage({ type: "error", text: data.error || "Failed to fetch profile" });
+        }
       } catch (err) {
-        console.error("Error fetching user:", err);
+        console.error("Profile fetch error:", err);
+        setMessage({ type: "error", text: "Error fetching profile" });
       }
     };
-    fetchUser();
-  }, []);
 
-  // ✅ Handle profile picture upload
+    fetchProfile();
+  }, [setUser]);
+
+  // Handle file input (with preview)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setProfilePic(file);
+
     if (file) {
-      setPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
     }
   };
 
-  // ✅ Update profile (name, email, picture)
-  const handleSaveProfile = async (e) => {
+  // Handle profile form input
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Update profile
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    if (profilePic) {
-      formData.append("profile_pic", profilePic);
-    }
-    formData.append("fullname", user?.fullname || "");
-    formData.append("email", user?.email || "");
-
     try {
+      const formData = new FormData();
+      if (profilePic) formData.append("profile_pic", profilePic);
+      formData.append("firstname", profileData.firstname);
+      formData.append("secondname", profileData.secondname);
+      formData.append("phone", profileData.phone);
+
       const res = await fetch("http://localhost:5000/update_profile", {
         method: "POST",
         body: formData,
-        credentials: "include",
+        credentials: "include", // 🔑 always include cookies
       });
 
       const data = await res.json();
-      alert("Profile updated successfully!");
-      setUser(data);
-    } catch (err) {
-      console.error("Error updating profile:", err);
+
+      if (res.ok) {
+        setUser(data.user);
+        setEditMode(false);
+        setMessage({ type: "success", text: "Profile updated successfully!" });
+        setProfilePic(null);
+        setPreview(null);
+      } else {
+        setMessage({ type: "error", text: data.error || "Failed to update profile" });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setMessage({ type: "error", text: "Error updating profile" });
     }
   };
 
-  // ✅ Handle security form changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
+  // Handle password form input
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Save security settings
-  const handleSaveSecurity = async (e) => {
+  // Update password
+  const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: "error", text: "New passwords do not match!" });
+      return;
+    }
+
     try {
-      const res = await fetch("http://localhost:5000/update_security", {
+      const res = await fetch("http://localhost:5000/update_password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          old_password: passwordData.oldPassword,
+          new_password: passwordData.newPassword,
+        }),
       });
+
       const data = await res.json();
-      alert(data.message || "Security settings updated!");
-    } catch (err) {
-      console.error("Error updating security:", err);
+
+      if (res.ok) {
+        setMessage({ type: "success", text: "Password updated successfully!" });
+        setSecurityMode(false);
+        setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        setMessage({ type: "error", text: data.error || "Failed to update password" });
+      }
+    } catch (error) {
+      console.error("Password update error:", error);
+      setMessage({ type: "error", text: "Error updating password" });
     }
   };
 
-  if (!user) return <p className="text-center mt-10">Loading profile...</p>;
-
   return (
-    <div className="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Account Settings</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">My Profile</h2>
 
-      {/* ✅ Tabs Navigation */}
-      <div className="flex border-b mb-6">
-        <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === "profile"
-              ? "border-b-2 border-green-500 text-green-600"
-              : "text-gray-500"
+      {/* Flash message */}
+      {message && (
+        <div
+          className={`p-3 mb-4 rounded ${
+            message.type === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
           }`}
-          onClick={() => setActiveTab("profile")}
         >
-          Profile
+          {message.text}
+        </div>
+      )}
+
+      {/* Profile picture */}
+      <div className="flex items-center space-x-4 mb-6">
+        <img
+          src={
+            preview
+              ? preview
+              : user?.profile_pic
+              ? `http://localhost:5000/uploads/profile_pictures/${user.profile_pic}`
+              : "https://via.placeholder.com/100"
+          }
+          alt="Profile"
+          className="w-24 h-24 rounded-full object-cover border"
+        />
+        {editMode && <input type="file" accept="image/*" onChange={handleFileChange} />}
+      </div>
+
+      {/* Toggle buttons */}
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={() => setEditMode((prev) => !prev)}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          {editMode ? "Cancel Edit" : "Edit Profile"}
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === "security"
-              ? "border-b-2 border-green-500 text-green-600"
-              : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("security")}
+          onClick={() => setSecurityMode((prev) => !prev)}
+          className="px-4 py-2 bg-gray-600 text-white rounded"
         >
-          Security
+          {securityMode ? "Cancel Password" : "Change Password"}
         </button>
       </div>
 
-      {/* ✅ Profile Tab */}
-      {activeTab === "profile" && (
-        <form onSubmit={handleSaveProfile} className="space-y-6">
-          <div className="flex flex-col items-center mb-6">
-            {preview || user.profile_pic ? (
-              <img
-                src={preview || user.profile_pic}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-4 border-green-500"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-green-500 to-yellow-500 flex items-center justify-center text-white text-3xl font-bold">
-                {(user.fullname || "")
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()}
-              </div>
-            )}
-            <label className="mt-4 cursor-pointer bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
-              Upload Picture
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-gray-600 text-sm font-medium">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={user.fullname || ""}
-              onChange={(e) => setUser({ ...user, fullname: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-600 text-sm font-medium">
-              Email
-            </label>
-            <input
-              type="email"
-              value={user.email || ""}
-              onChange={(e) => setUser({ ...user, email: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
-          >
+      {/* Profile update form */}
+      {editMode && (
+        <form onSubmit={handleProfileUpdate} className="space-y-4">
+          <input
+            type="text"
+            name="firstname"
+            placeholder="First Name"
+            value={profileData.firstname}
+            onChange={handleProfileChange}
+            className="w-full border p-2 rounded"
+          />
+          <input
+            type="text"
+            name="secondname"
+            placeholder="Second Name"
+            value={profileData.secondname}
+            onChange={handleProfileChange}
+            className="w-full border p-2 rounded"
+          />
+          <input
+            type="text"
+            name="phone"
+            placeholder="Phone Number"
+            value={profileData.phone}
+            onChange={handleProfileChange}
+            className="w-full border p-2 rounded"
+          />
+          <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded">
             Save Changes
           </button>
         </form>
       )}
 
-      {/* ✅ Security Tab */}
-      {activeTab === "security" && (
-        <form onSubmit={handleSaveSecurity} className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <FiLock className="mr-2" /> Password
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Minimum 8 characters with at least one number
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold mb-1 flex items-center">
-                  <FiShield className="mr-2" /> Two-Factor Authentication
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Add an extra layer of security to your account
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="twoFactor"
-                  checked={formData.twoFactor}
-                  onChange={handleChange}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-gradient-to-r from-green-500 to-yellow-500 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Update Security
-            </button>
-          </div>
+      {/* Change password form */}
+      {securityMode && (
+        <form onSubmit={handlePasswordUpdate} className="space-y-4">
+          <input
+            type="password"
+            name="oldPassword"
+            placeholder="Old Password"
+            value={passwordData.oldPassword}
+            onChange={handlePasswordChange}
+            className="w-full border p-2 rounded"
+          />
+          <input
+            type="password"
+            name="newPassword"
+            placeholder="New Password"
+            value={passwordData.newPassword}
+            onChange={handlePasswordChange}
+            className="w-full border p-2 rounded"
+          />
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm New Password"
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordChange}
+            className="w-full border p-2 rounded"
+          />
+          <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded">
+            Update Password
+          </button>
         </form>
       )}
     </div>

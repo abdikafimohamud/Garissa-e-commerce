@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 
 const SellerSports = () => {
   const [sports, setSports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
     category: "sports",
-    subCategory: "T-shirts",
+    subcategory: "T-shirts",
     stock: 0,
     rating: 0,
     isNew: false,
@@ -15,7 +17,7 @@ const SellerSports = () => {
     description: "",
   });
   const [editingId, setEditingId] = useState(null);
-  const API_URL = "http://localhost:5000/sports"; // change if needed
+  const API_URL = "http://localhost:5000/api/products";
 
   useEffect(() => {
     fetchSports();
@@ -23,11 +25,45 @@ const SellerSports = () => {
 
   const fetchSports = async () => {
     try {
+      setLoading(true);
       const res = await fetch(API_URL);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setSports(data);
+      console.log("API Response:", data);
+      
+      // Handle different response formats and filter for sports products
+      let products = [];
+      
+      if (Array.isArray(data)) {
+        products = data;
+      } else if (data && Array.isArray(data.products)) {
+        products = data.products;
+      } else if (data && Array.isArray(data.items)) {
+        products = data.items;
+      } else if (data && typeof data === 'object') {
+        products = [data];
+      } else {
+        throw new Error("Unexpected API response format");
+      }
+      
+      // Filter products to only include sports category
+      const sportsProducts = products.filter(product => 
+        product.category && product.category.toLowerCase() === "sports"
+      );
+      
+      setSports(sportsProducts);
+      setError(null);
+      
     } catch (error) {
       console.error("Error fetching sports:", error);
+      setError(error.message);
+      setSports([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,15 +90,18 @@ const SellerSports = () => {
       if (res.ok) {
         fetchSports();
         resetForm();
+      } else {
+        throw new Error(`Failed to save: ${res.status}`);
       }
     } catch (error) {
       console.error("Error saving sports item:", error);
+      setError(error.message);
     }
   };
 
   const handleEdit = (item) => {
     setFormData(item);
-    setEditingId(item.id);
+    setEditingId(item._id || item.id);
   };
 
   const handleDelete = async (id) => {
@@ -71,10 +110,13 @@ const SellerSports = () => {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setSports((prev) => prev.filter((item) => item.id !== id));
+        setSports((prev) => prev.filter((item) => (item._id || item.id) !== id));
+      } else {
+        throw new Error(`Failed to delete: ${res.status}`);
       }
     } catch (error) {
       console.error("Error deleting sports item:", error);
+      setError(error.message);
     }
   };
 
@@ -83,7 +125,7 @@ const SellerSports = () => {
       name: "",
       price: "",
       category: "sports",
-      subCategory: "T-shirts",
+      subcategory: "T-shirts",
       stock: 0,
       rating: 0,
       isNew: false,
@@ -99,6 +141,19 @@ const SellerSports = () => {
       <h1 className="text-xl font-bold mb-4">
         {editingId ? "Edit Sports Product" : "Add New Sports Product"}
       </h1>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <strong>Error: </strong>{error}
+          <button 
+            onClick={() => setError(null)} 
+            className="ml-4 text-red-800 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Form */}
       <form
@@ -148,8 +203,8 @@ const SellerSports = () => {
           <div>
             <label className="block mb-1">Sub Category</label>
             <select
-              name="subCategory"
-              value={formData.subCategory}
+              name="subcategory"
+              value={formData.subcategory}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             >
@@ -252,62 +307,80 @@ const SellerSports = () => {
         </div>
       </form>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="text-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2">Loading sports products...</p>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-md p-4 overflow-x-auto">
-        <table className="w-full text-sm border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">Image</th>
-              <th className="border p-2">Name</th>
-              <th className="border p-2">Price</th>
-              <th className="border p-2">SubCategory</th>
-              <th className="border p-2">Stock</th>
-              <th className="border p-2">Rating</th>
-              <th className="border p-2">New</th>
-              <th className="border p-2">Best Seller</th>
-              <th className="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sports.map((item) => (
-              <tr key={item.id}>
-                <td className="border p-2">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="w-14 h-14 object-cover"
-                  />
-                </td>
-                <td className="border p-2">{item.name}</td>
-                <td className="border p-2">${item.price}</td>
-                <td className="border p-2">{item.subCategory}</td>
-                <td className="border p-2">{item.stock}</td>
-                <td className="border p-2">{item.rating}</td>
-                <td className="border p-2">
-                  {item.isNew ? "✅" : "❌"}
-                </td>
-                <td className="border p-2">
-                  {item.isBestSeller ? "✅" : "❌"}
-                </td>
-                <td className="border p-2 flex gap-2">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
+      {!loading && (
+        <div className="bg-white rounded-lg shadow-md p-4 overflow-x-auto">
+          <table className="w-full text-sm border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Image</th>
+                <th className="border p-2">Name</th>
+                <th className="border p-2">Price</th>
+                <th className="border p-2">SubCategory</th>
+                <th className="border p-2">Stock</th>
+                <th className="border p-2">Rating</th>
+                <th className="border p-2">New</th>
+                <th className="border p-2">Best Seller</th>
+                <th className="border p-2">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {sports.length > 0 ? (
+                sports.map((item) => (
+                  <tr key={item._id || item.id}>
+                    <td className="border p-2">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-14 h-14 object-cover"
+                      />
+                    </td>
+                    <td className="border p-2">{item.name}</td>
+                    <td className="border p-2">${item.price}</td>
+                    <td className="border p-2">{item.subcategory}</td>
+                    <td className="border p-2">{item.stock}</td>
+                    <td className="border p-2">{item.rating}</td>
+                    <td className="border p-2">
+                      {item.isNew ? "✅" : "❌"}
+                    </td>
+                    <td className="border p-2">
+                      {item.isBestSeller ? "✅" : "❌"}
+                    </td>
+                    <td className="border p-2 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="bg-yellow-500 text-white px-2 py-1 rounded"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item._id || item.id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="9" className="text-center p-4">
+                    No sports products found. {error ? "Check your API connection." : "Add some sports products to get started!"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

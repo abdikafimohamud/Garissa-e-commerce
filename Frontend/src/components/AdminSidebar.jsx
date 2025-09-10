@@ -70,7 +70,7 @@ export default function AdminSidebar() {
           </NavLink>
 
           {/* Notifications */}
-          <NavLink to="/admin/notifications" className={linkClasses}>
+          <NavLink to="/admin/NotificationManagement" className={linkClasses}>
             <FiBell className="mr-3" /> Notifications
           </NavLink>
           

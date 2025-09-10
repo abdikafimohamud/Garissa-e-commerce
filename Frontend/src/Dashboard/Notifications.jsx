@@ -1,94 +1,156 @@
-// src/user/Notifications.jsx
-import { useState, useEffect } from "react";
-import { FiBell, FiCheckCircle, FiInfo, FiAlertTriangle, FiAlertOctagon } from "react-icons/fi";
+import React, { useState, useEffect } from 'react';
 
-const NOTIFICATIONS_API_URL = "http://localhost:5000/notifications";
-const CURRENT_USER_ID = 2; // 🔑 Replace this with your logged-in user ID (from auth/session)
-
-const Notifications = () => {
+const BuyerNotifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
 
+  // API base URL - adjust this to match your Flask server
+  const API_BASE_URL = 'http://localhost:5000';
+
+  // Fetch notifications
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch(NOTIFICATIONS_API_URL);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const all = await res.json();
-
-        // ✅ Filter notifications for this user (or all users)
-        const userNotifs = all.filter(
-          (n) => n.targetUser === "all" || n.targetUser === CURRENT_USER_ID
-        );
-        setNotifications(userNotifs.reverse()); // Show latest first
-      } catch (err) {
-        console.error(err);
-      }
-    };
     fetchNotifications();
   }, []);
 
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-    // TODO: update backend if needed
-  };
-
-  const getIcon = (type) => {
-    switch (type) {
-      case "info":
-        return <FiInfo className="text-blue-500 w-5 h-5" />;
-      case "warning":
-        return <FiAlertTriangle className="text-yellow-500 w-5 h-5" />;
-      case "alert":
-        return <FiAlertOctagon className="text-red-500 w-5 h-5" />;
-      default:
-        return <FiBell className="text-gray-500 w-5 h-5" />;
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      // Ensure we're working with an array
+      const notificationsData = Array.isArray(data) ? data : [];
+      setNotifications(notificationsData);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      alert('Failed to fetch notifications');
+      setNotifications([]); // Set to empty array on error
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 flex items-center">
-        <FiBell className="mr-2 text-green-600" /> My Notifications
-      </h1>
+  const markAsRead = async (id) => {
+    try {
+      // Update the read status on the server
+      const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ read: true })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Update the local state
+      setNotifications(notifications.map(notif => 
+        notif.id === id ? {...notif, read: true} : notif
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
 
-      {notifications.length === 0 ? (
-        <div className="text-gray-500 text-center bg-white p-10 rounded-lg shadow">
-          <FiCheckCircle className="mx-auto mb-2 text-green-500 w-10 h-10" />
-          <p>No new notifications 🎉</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`flex items-start gap-4 p-4 rounded-lg shadow border transition ${
-                n.read ? "bg-gray-100" : "bg-white"
-              }`}
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'info': return 'bg-blue-100 text-blue-800';
+      case 'warning': return 'bg-yellow-100 text-yellow-800';
+      case 'alert': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Ensure filteredNotifications is always an array
+  const filteredNotifications = Array.isArray(notifications) ? notifications.filter(notif => {
+    if (filter === 'all') return true;
+    if (filter === 'read') return notif.read;
+    if (filter === 'unread') return !notif.read;
+    return true;
+  }) : [];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Buyer Notifications</h1>
+      
+      {/* Filter Controls */}
+      <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+        <div className="flex items-center">
+          <span className="mr-3 text-gray-700">Filter:</span>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
             >
-              <div>{getIcon(n.type)}</div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">{n.title}</h3>
-                <p className="text-gray-600 text-sm">{n.message}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(n.date).toLocaleString()}
-                </p>
-              </div>
-              {!n.read && (
-                <button
-                  onClick={() => markAsRead(n.id)}
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Mark as Read
-                </button>
-              )}
-            </div>
-          ))}
+              All
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              className={`px-4 py-2 rounded-md ${filter === 'unread' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              Unread
+            </button>
+            <button
+              onClick={() => setFilter('read')}
+              className={`px-4 py-2 rounded-md ${filter === 'read' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              Read
+            </button>
+          </div>
         </div>
-      )}
+      </div>
+      
+      {/* Notifications List */}
+      <div>
+        {filteredNotifications.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No notifications found.</p>
+        ) : (
+          <div className="space-y-4">
+            {filteredNotifications.map(notification => (
+              <div 
+                key={notification.id} 
+                className={`bg-white shadow-md rounded-lg p-4 ${!notification.read ? 'border-l-4 border-blue-500' : ''}`}
+                onClick={() => !notification.read && markAsRead(notification.id)}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
+                        {notification.type}
+                      </span>
+                      <span className="ml-2 text-sm text-gray-500">
+                        {notification.date ? new Date(notification.date).toLocaleString() : 'No date'}
+                      </span>
+                      {!notification.read && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                          New
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-semibold">{notification.title}</h3>
+                    <p className="text-gray-700 mt-1">{notification.message}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default Notifications;
+export default BuyerNotifications;

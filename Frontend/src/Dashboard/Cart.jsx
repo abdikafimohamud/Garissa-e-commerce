@@ -209,7 +209,7 @@ const Cart = ({ cartItems, setCartItems }) => {
 
               {/* Checkout Button */}
               <Link
-                to="/checkout"
+                to="/Buyers/checkout"
                 className="block w-full text-center bg-red-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
               >
                 Proceed to Checkout

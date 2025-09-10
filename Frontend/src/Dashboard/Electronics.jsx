@@ -7,17 +7,42 @@ const Electronics = ({ addToCart }) => {
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchElectronics = async () => {
       try {
-        const res = await fetch("http://localhost:5000/electronics");
-        if (!res.ok) throw new Error("Failed to fetch electronics");
-        const data = await res.json();
-        console.log("Fetched Electronics:", data); // 👈 Add here
-        setElectronicsProducts(data);
+        setLoading(true);
+        setError(null);
+        
+        // Always fetch all products and filter for electronics
+        const allRes = await fetch("http://localhost:5000/api/products");
+        if (!allRes.ok) throw new Error("Failed to fetch products");
+        const allData = await allRes.json();
+        
+        // Filter only electronics products
+        let electronicsData = [];
+        if (Array.isArray(allData)) {
+          electronicsData = allData.filter(p => 
+            p.category === 'electronics' || 
+            p.category === 'Electronics' ||
+            (p.subcategory && ['smartphone', 'laptop', 'television', 'audio'].includes(p.subcategory.toLowerCase()))
+          );
+        } else if (allData.products && Array.isArray(allData.products)) {
+          electronicsData = allData.products.filter(p => 
+            p.category === 'electronics' || 
+            p.category === 'Electronics' ||
+            (p.subcategory && ['smartphone', 'laptop', 'television', 'audio'].includes(p.subcategory.toLowerCase()))
+          );
+        }
+        
+        setElectronicsProducts(electronicsData);
       } catch (err) {
-        console.error(err);
+        setError(err.message || "Something went wrong");
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -56,7 +81,8 @@ const Electronics = ({ addToCart }) => {
     .filter((product) => {
       const categoryMatch =
         activeCategory === "all" ||
-        normalizeSubCategory(product.subCategory) === activeCategory;
+        normalizeSubCategory(product.subCategory) === activeCategory ||
+        normalizeSubCategory(product.subcategory) === activeCategory;
 
       const priceMatch =
         product.price >= priceRange[0] && product.price <= priceRange[1];
@@ -87,6 +113,22 @@ const Electronics = ({ addToCart }) => {
     { id: "television", name: "Television", icon: "📺" },
     { id: "audio", name: "Audio", icon: "🎧" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg font-semibold text-gray-600">Loading electronics...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg font-semibold text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -215,7 +257,7 @@ const Electronics = ({ addToCart }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => (
                   <Products
-                    key={product.id}
+                    key={product.id || product._id}
                     product={product}
                     addToCart={addToCart}
                     badgeText={
@@ -233,7 +275,7 @@ const Electronics = ({ addToCart }) => {
               <div className="text-center py-16 bg-white rounded-xl shadow-sm">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-medium text-gray-700 mb-2">
-                  No products found
+                  No electronics products found
                 </h3>
                 <p className="text-gray-500 mb-4">
                   Try adjusting your filters or browse other categories

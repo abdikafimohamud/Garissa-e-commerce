@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 // Components
@@ -16,8 +16,6 @@ import Contact from "./pages/Contact";
 import BuyerLogin from "./pages/BuyerLogin";
 import SellerLogin from "./pages/SellerLogin";
 import Register from "./pages/Register";
-import Checkout from "./pages/Checkout";
-import ViewOrders from "./pages/ViewOrders";
 
 // Seller Dashboard Imports
 import SellerDashboardLayout from "./sellers/SellerDashboardLayout";
@@ -32,6 +30,7 @@ import SellerEarnings from "./sellers/SellerEarnings";
 import SellerNotifications from "./sellers/SellerNotifications";
 import SellerProfile from "./sellers/SellerProfile";
 
+
 // User Dashboard
 import DashboardLayout from "./Dashboard/DashboardLayout";
 import DashboardHome from "./Dashboard/DashboardHome";
@@ -40,6 +39,8 @@ import Cosmetics from "./Dashboard/Cosmetics";
 import Electronics from "./Dashboard/Electronics";
 import Sports from "./Dashboard/Sports";
 import Cart from "./Dashboard/Cart";
+import Checkout from "./Dashboard/Checkout";
+import ViewOrders from "./Dashboard/ViewOrders";
 import Profilee from "./Dashboard/Profilee";
 import Notifications from "./Dashboard/Notifications";
 
@@ -52,8 +53,7 @@ import ProductsManagement from "./admin/ProductsManagement";
 import OrdersManagement from "./admin/OrdersManagement";
 import Analytics from "./admin/Analytics";
 import Earnings from "./admin/Earnings";
-import NotificationsManagement from "./admin/NotificationsManagement";
-
+import NotificationManagement from "./admin/NotificationManagement";
 
 // ✅ Layout wrapper ONLY for public pages
 function PublicLayout({ cartItems }) {
@@ -71,31 +71,6 @@ function PublicLayout({ cartItems }) {
 function App() {
   const [cartItems, setCartItems] = useState([]);
 
-  // 🛍️ Dynamic product state
-  const [clothes, setClothes] = useState([]);
-  const [electronics, setElectronics] = useState([]);
-  const [cosmetics, setCosmetics] = useState([]);
-  const [sports, setSports] = useState([]);
-
-  // 🔁 Fetch categories
-  useEffect(() => {
-    const fetchCategory = async (endpoint, setter) => {
-      try {
-        const res = await fetch(`http://localhost:5000/${endpoint}`);
-        if (!res.ok) throw new Error(`Failed to fetch ${endpoint}`);
-        const data = await res.json();
-        setter(data);
-      } catch (err) {
-        console.error(`Error fetching ${endpoint}:`, err);
-      }
-    };
-
-    fetchCategory("clothes", setClothes);
-    fetchCategory("electronics", setElectronics);
-    fetchCategory("cosmetics", setCosmetics);
-    fetchCategory("sports", setSports);
-  }, []);
-
   // 🛒 Cart functions
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -111,6 +86,11 @@ function App() {
     });
   };
 
+  // Clear cart function for checkout
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
   return (
     <AuthProvider>
       <Routes>
@@ -119,15 +99,8 @@ function App() {
           <Route
             path="/"
             element={
-              <Home
-                clothes={clothes}
-                electronics={electronics}
-                cosmetics={cosmetics}
-                sports={sports}
-                addToCart={addToCart}
-              />
+              <Home addToCart={addToCart} />
             }
-            Contact
           />
           <Route path="/about" element={<About />} />
           <Route path="/categories" element={<Categories />} />
@@ -135,10 +108,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/buyer-login" element={<BuyerLogin />} />
           <Route path="/seller-login" element={<SellerLogin />} />
-          <Route path="/ header" element={< Header />} />
+          <Route path="/header" element={<Header />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
-          <Route path="/orders" element={<ViewOrders />} />
         </Route>
 
         {/* 👤 User Dashboard (protected, no duplicate navbar/footer) */}
@@ -147,24 +118,33 @@ function App() {
           <Route path="dashboard-home" element={<DashboardHome />} />
           <Route
             path="clothes"
-            element={<Clothes Buyers={clothes} addToCart={addToCart} />}
+            element={<Clothes addToCart={addToCart} />}
           />
           <Route
             path="cosmetics"
-            element={<Cosmetics Buyers={cosmetics} addToCart={addToCart} />}
+            element={<Cosmetics addToCart={addToCart} />}
           />
           <Route
             path="electronics"
-            element={<Electronics Buyers={electronics} addToCart={addToCart} />}
+            element={<Electronics addToCart={addToCart} />}
           />
           <Route
             path="sports"
-            element={<Sports Buyers={sports} addToCart={addToCart} />}
+            element={<Sports addToCart={addToCart} />}
           />
           <Route path="Profilee" element={<Profilee />} />
-          <Route path="cart" element={<Cart cartItems={cartItems} setCartItems={setCartItems} />} />
+          <Route 
+            path="cart" 
+            element={<Cart cartItems={cartItems} setCartItems={setCartItems} />} 
+          />
+          <Route 
+            path="checkout" 
+            element={<Checkout cartItems={cartItems} clearCart={clearCart} />} 
+          />
+          <Route path="orders" element={<ViewOrders />} />
           <Route path="Notifications" element={<Notifications />} />
         </Route>
+        
 
         {/* 🏬 Sellers dashboard */}
         <Route path="/seller" element={<SellerDashboardLayout />}>
@@ -191,7 +171,7 @@ function App() {
           <Route path="orders" element={<OrdersManagement />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="earnings" element={<Earnings />} />
-          <Route path="notifications" element={<NotificationsManagement />} />
+          <Route path="NotificationManagement" element={<NotificationManagement />} />
         </Route>
 
         {/* 🚫 Catch-all redirect */}

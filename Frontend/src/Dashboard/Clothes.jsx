@@ -3,38 +3,66 @@ import PropTypes from "prop-types";
 import Products from "../pages/Buyers";
 
 const Clothes = ({ addToCart }) => {
-  // ⬅ remove products from props
   const [clothes, setClothes] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("all"); // default category
-  const [priceFilter, setPriceFilter] = useState("all"); // default price filter
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch clothes from backend
   useEffect(() => {
     const fetchClothes = async () => {
       try {
-        const res = await fetch("http://localhost:5000/clothes"); // ⬅ backend endpoint
+        setLoading(true);
+        const res = await fetch("http://localhost:5000/api/products");
         if (!res.ok) throw new Error("Failed to fetch clothes");
         const data = await res.json();
-        setClothes(data);
+        
+        // Handle both response formats - with products array or direct array
+        const productsData = data.products || data;
+        
+        // Filter for clothing products only
+        const clothesProducts = Array.isArray(productsData) 
+          ? productsData.filter(product => 
+              product && product.category && product.category.toLowerCase() === "clothes"
+            )
+          : [];
+          
+        setClothes(clothesProducts);
+        setError(null);
       } catch (err) {
         console.error(err);
+        setError("Failed to load products. Please try again later.");
+        setClothes([]);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchClothes();
-  }, []);
+  }, [refreshTrigger]);
 
   // Memoized filters for better performance
   const [allClothes, menClothes, womenClothes, childrenClothes] =
     useMemo(() => {
-      const clothesItems = clothes.filter(
-        (p) => p.category?.toLowerCase() === "clothes"
-      );
+      // Ensure clothes is always treated as an array
+      const safeClothes = Array.isArray(clothes) ? clothes : [];
+      
       return [
-        clothesItems,
-        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "men"),
-        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "women"),
-        clothesItems.filter((p) => p.subCategory?.toLowerCase() === "children"),
+        safeClothes,
+        safeClothes.filter((p) => 
+          p && p.subCategory && p.subCategory.toLowerCase() === "men"
+        ),
+        safeClothes.filter((p) => 
+          p && p.subCategory && p.subCategory.toLowerCase() === "women"
+        ),
+        safeClothes.filter((p) => 
+          p && p.subCategory && (
+            p.subCategory.toLowerCase() === "children" || 
+            p.subCategory.toLowerCase() === "kids"
+          )
+        ),
       ];
     }, [clothes]);
 
@@ -44,19 +72,31 @@ const Clothes = ({ addToCart }) => {
 
     // Category filter
     if (activeCategory !== "all") {
-      filtered = filtered.filter(
-        (p) => p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
-      );
+      filtered = filtered.filter((p) => {
+        if (!p) return false;
+        
+        if (activeCategory === "men") {
+          return p.subCategory && p.subCategory.toLowerCase() === "men";
+        } else if (activeCategory === "women") {
+          return p.subCategory && p.subCategory.toLowerCase() === "women";
+        } else if (activeCategory === "children") {
+          return p.subCategory && (
+            p.subCategory.toLowerCase() === "children" || 
+            p.subCategory.toLowerCase() === "kids"
+          );
+        }
+        return true;
+      });
     }
 
-    // Price filter
+    // Price filter - ensure price exists and is a number
     switch (priceFilter) {
       case "under50":
-        return filtered.filter((p) => p.price < 50);
+        return filtered.filter((p) => p && typeof p.price === "number" && p.price < 50);
       case "50to100":
-        return filtered.filter((p) => p.price >= 50 && p.price <= 100);
+        return filtered.filter((p) => p && typeof p.price === "number" && p.price >= 50 && p.price <= 100);
       case "over100":
-        return filtered.filter((p) => p.price > 100);
+        return filtered.filter((p) => p && typeof p.price === "number" && p.price > 100);
       default:
         return filtered;
     }
@@ -68,11 +108,54 @@ const Clothes = ({ addToCart }) => {
       womenClothes.length > 0 ||
       childrenClothes.length > 0);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <h1 className="text-3xl font-bold mb-8">Garissa Fashion Collection</h1>
+        <div className="flex justify-center items-center h-64">
+          <p>Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <h1 className="text-3xl font-bold mb-8">Garissa Fashion Collection</h1>
+        <div className="flex flex-col justify-center items-center h-64">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => setRefreshTrigger(prev => prev + 1)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-8 text-center">
         Garissa Fashion Collection
       </h1>
+
+      {/* Refresh Button */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={() => setRefreshTrigger(prev => prev + 1)}
+          className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Refresh Products
+        </button>
+      </div>
 
       {/* Category Filter */}
       <div className="flex flex-wrap justify-center gap-4 mb-8">
@@ -83,7 +166,7 @@ const Clothes = ({ addToCart }) => {
             className={`px-4 py-2 rounded-full transition-colors ${
               activeCategory === cat
                 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white"
-                : "bg-red-200 hover:bg-gray-300"
+                : "bg-gray-200 hover:bg-gray-300"
             }`}
             aria-pressed={activeCategory === cat}
             aria-label={`Show ${cat === "all" ? "all" : cat + "'s"} clothing`}
@@ -120,28 +203,32 @@ const Clothes = ({ addToCart }) => {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
-            <Products
-              key={product.id}
-              product={product}
-              addToCart={addToCart}
-            />
+            product && ( // Ensure product exists before rendering
+              <Products
+                key={product.id || product._id || Math.random()}
+                product={product}
+                addToCart={addToCart}
+              />
+            )
           ))}
         </div>
       ) : (
         <div className="text-center py-12">
           <p className="text-xl text-gray-500">
-            No products match your filters.
+            {clothes.length === 0 ? "No products available." : "No products match your filters."}
           </p>
-          <button
-            onClick={() => {
-              setActiveCategory("all");
-              setPriceFilter("all");
-            }}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
-            aria-label="Reset all filters"
-          >
-            Reset Filters
-          </button>
+          {clothes.length > 0 && (
+            <button
+              onClick={() => {
+                setActiveCategory("all");
+                setPriceFilter("all");
+              }}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+              aria-label="Reset all filters"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       )}
 
@@ -155,11 +242,13 @@ const Clothes = ({ addToCart }) => {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {menClothes.map((product) => (
-                  <Products
-                    key={product.id}
-                    product={product}
-                    addToCart={addToCart}
-                  />
+                  product && (
+                    <Products
+                      key={product.id || product._id || Math.random()}
+                      product={product}
+                      addToCart={addToCart}
+                    />
+                  )
                 ))}
               </div>
             </section>
@@ -172,11 +261,13 @@ const Clothes = ({ addToCart }) => {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {womenClothes.map((product) => (
-                  <Products
-                    key={product.id}
-                    product={product}
-                    addToCart={addToCart}
-                  />
+                  product && (
+                    <Products
+                      key={product.id || product._id || Math.random()}
+                      product={product}
+                      addToCart={addToCart}
+                    />
+                  )
                 ))}
               </div>
             </section>
@@ -189,11 +280,13 @@ const Clothes = ({ addToCart }) => {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {childrenClothes.map((product) => (
-                  <Products
-                    key={product.id}
-                    product={product}
-                    addToCart={addToCart}
-                  />
+                  product && (
+                    <Products
+                      key={product.id || product._id || Math.random()}
+                      product={product}
+                      addToCart={addToCart}
+                    />
+                  )
                 ))}
               </div>
             </section>
@@ -205,18 +298,6 @@ const Clothes = ({ addToCart }) => {
 };
 
 Clothes.propTypes = {
-  products: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      name: PropTypes.string.isRequired,
-      price: PropTypes.number.isRequired,
-      image: PropTypes.string.isRequired,
-      category: PropTypes.string,
-      subCategory: PropTypes.string,
-      rating: PropTypes.number,
-      reviews: PropTypes.number,
-    })
-  ).isRequired,
   addToCart: PropTypes.func.isRequired,
 };
 

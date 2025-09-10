@@ -1,14 +1,15 @@
 from flask import Blueprint, request, jsonify, session
-from models.user import User
 from app import db
+from app.models import User
 import bcrypt
 import re
 
-auth_bp = Blueprint('auth_bp', __name__)
+auth_bp = Blueprint('auth', __name__)
 
-# =========================
-# REGISTRATION ROUTE
-# =========================
+def is_valid_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
 @auth_bp.route('/register', methods=['POST'])
 def register_user():
     try:
@@ -95,7 +96,8 @@ def login_buyer():
         if not user:
             return jsonify({'error': 'Invalid email or not a buyer account'}), 401
 
-        if not user.check_password(password):
+        # Check password using bcrypt
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
         # Create session
@@ -103,11 +105,12 @@ def login_buyer():
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
+        session['logged_in'] = True  # Add session flag
 
         return jsonify({
             "message": "Buyer login successful",
             "user": user.to_dict(),
-            "redirect": "/products/dashboard-home"
+            "redirect": "/buyers/dashboard-home"
         }), 200
 
     except Exception as e:
@@ -130,7 +133,8 @@ def login_seller():
         if not user:
             return jsonify({'error': 'Invalid email or not a seller account'}), 401
 
-        if not user.check_password(password):
+        # Check password using bcrypt
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
         # Create session
@@ -138,6 +142,7 @@ def login_seller():
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
+        session['logged_in'] = True  # Add session flag
 
         return jsonify({
             "message": "Seller login successful",
@@ -148,52 +153,159 @@ def login_seller():
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
-# =========================
-# LOGOUT ROUTE
-# =========================
+
 @auth_bp.route('/logout', methods=['POST'])
-def logout_user():
+def logout():
     try:
+        # Clear session
         session.clear()
         return jsonify({"message": "Logged out successfully"}), 200
     except Exception as e:
-        return jsonify({'error': f"Internal server error: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
-# =========================
-# GET CURRENT USER
-# =========================
-# In your get_current_user route, add more debugging:
-@auth_bp.route('/get_current_user', methods=['GET'])
-def get_current_user():
+@auth_bp.route('/profile', methods=['GET'])
+def get_profile():
     try:
-        user_id = session.get('user_id')
-        print(f"DEBUG: Session user_id = {user_id}")
-        print(f"DEBUG: All session data = {dict(session)}")
+        # Check if user is logged in
+        if not session.get('user_id'):
+            return jsonify({"error": "Not authenticated"}), 401
         
-        if not user_id:
-            print("DEBUG: No user_id in session - user not logged in")
-            return jsonify({'error': 'Unauthorized'}), 401
-
+        user_id = session['user_id']
         user = User.query.get(user_id)
-        if not user:
-            print(f"DEBUG: User with id {user_id} not found in database")
-            session.clear()
-            return jsonify({'error': 'User not found'}), 404
-
-        # Check what fields the user object has
-        print(f"DEBUG: User object has firstname: {hasattr(user, 'firstname')}")
-        if hasattr(user, 'firstname'):
-            print(f"DEBUG: User firstname = {user.firstname}")
         
-        user_dict = user.to_dict()
-        print(f"DEBUG: User.to_dict() returns: {user_dict}")
+        if not user:
+            return jsonify({"error": "User not found"}), 404
         
         return jsonify({
-            "user": user_dict
+            "user": user.to_dict()
         }), 200
-
+        
     except Exception as e:
-        print(f"ERROR in get_current_user: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f"Internal server error: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/profile', methods=['PUT', 'PATCH'])
+def update_profile():
+    try:
+        # Check if user is logged in
+        if not session.get('user_id'):
+            return jsonify({"error": "Not authenticated"}), 401
+        
+        user_id = session['user_id']
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        data = request.get_json()
+        
+        # Update fields if provided
+        if 'firstname' in data:
+            user.firstname = data['firstname']
+        if 'secondname' in data:
+            user.secondname = data['secondname']
+        if 'phone' in data:
+            user.phone = data['phone']
+        if 'profile_pic' in data:
+            user.profile_pic = data['profile_pic']
+        if 'account_type' in data:
+            user.account_type = data['account_type']
+        
+        # Email update requires validation and uniqueness check
+        if 'email' in data:
+            if not is_valid_email(data['email']):
+                return jsonify({"error": "Invalid email format"}), 400
+            
+            # Check if email is already taken by another user
+            existing_user = User.query.filter(User.email == data['email'], User.id != user_id).first()
+            if existing_user:
+                return jsonify({"error": 'Email already taken'}), 409
+            
+            user.email = data['email']
+        
+        # Password update
+        if 'password' in data:
+            if len(data['password']) < 6:
+                return jsonify({"error": "Password must be at least 6 characters"}), 400
+            user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Profile updated successfully",
+            "user": user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/profile', methods=['DELETE'])
+def delete_profile():
+    try:
+        # Check if user is logged in
+        if not session.get('user_id'):
+            return jsonify({"error": "Not authenticated"}), 401
+        
+        user_id = session['user_id']
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Clear session first
+        session.clear()
+        
+        # Delete user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Account deleted successfully"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/check-auth', methods=['GET'])
+def check_auth():
+    try:
+        if session.get('user_id'):
+            user_id = session['user_id']
+            user = User.query.get(user_id)
+            
+            if user:
+                return jsonify({
+                    "authenticated": True,
+                    "user": user.to_dict()
+                }), 200
+        
+        return jsonify({
+            "authenticated": False
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/get_current_user', methods=['GET'])
+def get_current_user():
+    """
+    Get the currently authenticated user's information
+    This is similar to check_auth but returns a simpler response
+    """
+    try:
+        if not session.get('user_id'):
+            return jsonify({"error": "Not authenticated"}), 401
+        
+        user_id = session['user_id']
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "user": user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

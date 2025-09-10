@@ -1,10 +1,7 @@
 // src/components/UserSidebar.jsx
-import { useContext } from "react";
 import { NavLink } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 
 export default function UserSidebar() {
-  const { user, logout } = useContext(AuthContext);
 
   const menuItems = [
     { path: "/Buyers/dashboard-home", label: "Dashboard Home", icon: "🏠" },
@@ -13,8 +10,10 @@ export default function UserSidebar() {
     { path: "/Buyers/electronics", label: "Electronics", icon: "📱" },
     { path: "/Buyers/sports", label: "Sports", icon: "🏀" },
     { path: "/Buyers/cart", label: "Cart", icon: "🛒" },
-    { path: "/Buyers/profilee", label: "Profile", icon: "👤" },
-    { path: "/Buyers/notifications", label: "Notifications", icon: "🔔" },
+    { path: "/Buyers/checkout", label: "Checkout", icon: "💰" },
+    { path: "/Buyers/orders", label: "View Orders", icon: "📋" },
+    { path: "/Buyers/Profilee", label: "Profile", icon: "👤" },
+    { path: "/Buyers/Notifications", label: "Notifications", icon: "🔔" },
   ];
 
   const baseClasses =
@@ -24,7 +23,7 @@ export default function UserSidebar() {
     "text-gray-300 hover:bg-gray-700 hover:text-white";
 
   return (
-    <aside className="w-64 bg-gray-800 text-white min-h-screen flex flex-col shadow-lg">
+    <aside className="w-64 bg-gradient-to-r from-green-500 to-yellow-500 text-white min-h-screen flex flex-col shadow-lg">
       {/* Header */}
       <div className="p-6 border-b border-gray-700">
         <h2 className="text-2xl font-bold tracking-wide">User Dashboard</h2>
@@ -50,23 +49,6 @@ export default function UserSidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="p-6 border-t border-gray-700">
-        {user && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-300">
-              👋 Welcome back,
-              <span className="block font-semibold">{user.fullname}</span>
-            </p>
-          </div>
-        )}
-        <button
-          onClick={logout}
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition"
-        >
-          🚪 Logout
-        </button>
-      </div>
     </aside>
   );
 }
