@@ -83,13 +83,7 @@ const AdminDashboardLayout = () => {
             >
               <FiUsers className="mr-3" /> Manage Buyers
             </NavLink>
-            <NavLink
-              to="/admin/products"
-              className={linkClasses}
-              onClick={() => setIsMobileSidebarOpen(false)}
-            >
-              <FiBox className="mr-3" /> Manage Products
-            </NavLink>
+            
             <NavLink
               to="/admin/orders"
               className={linkClasses}

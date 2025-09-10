@@ -1,249 +1,384 @@
 import React, { useEffect, useState } from "react";
 
-const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+const BuyersManagement = () => {
+  const [buyers, setBuyers] = useState([]);
+  const [filteredBuyers, setFilteredBuyers] = useState([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage] = useState(5); // users per page
-  const [formData, setFormData] = useState({ fullname: "", email: "", password: "" });
-  const [editingUser, setEditingUser] = useState(null);
+  const [perPage] = useState(5);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch all users
-  const fetchUsers = async () => {
+  const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [editBuyer, setEditBuyer] = useState(null);
+  const [editForm, setEditForm] = useState({
+    firstname: "",
+    secondname: "",
+    email: "",
+    phone: "",
+    status: "active",
+  });
+
+  // Fetch all buyers
+  const fetchBuyers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/users", {
-        credentials: "include",
-      });
+      setLoading(true);
+      const res = await fetch("http://localhost:5000/admin/buyers");
+
       if (res.ok) {
         const data = await res.json();
-        setUsers(data);
-        setFilteredUsers(data);
-      } else if (res.status === 401) {
-        setError("⚠️ Not authorized. Please log in as admin.");
-        setUsers([]);
-        setFilteredUsers([]);
+        setBuyers(data.buyers || data);
+        setFilteredBuyers(data.buyers || data);
       } else {
         const err = await res.json();
-        setError(err.error || "Failed to fetch users");
+        setError(err.error || "Failed to fetch buyers");
       }
     } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Server error while fetching users");
+      console.error("Error fetching buyers:", err);
+      setError("Server error while fetching buyers");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchBuyers();
   }, []);
 
-  // Handle form change
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  // Add or Edit user
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    try {
-      const url = editingUser
-        ? `http://127.0.0.1:5000/users/${editingUser.id}`
-        : "http://127.0.0.1:5000/users";
-
-      const method = editingUser ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        fetchUsers();
-        setFormData({ fullname: "", email: "", password: "" });
-        setEditingUser(null);
-      } else {
-        const err = await res.json();
-        setError(err.error || "Something went wrong");
-      }
-    } catch (err) {
-      console.error("Error saving user:", err);
-      setError("Server error while saving user");
-    }
-  };
-
-  // Delete user
+  // Delete buyer
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm("Are you sure you want to delete this buyer?")) return;
     try {
-      const res = await fetch(`http://127.0.0.1:5000/users/${id}`, {
+      const res = await fetch(`http://localhost:5000/admin/buyers/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
+
       if (res.ok) {
-        fetchUsers();
+        fetchBuyers();
       } else {
         const err = await res.json();
-        setError(err.error || "Failed to delete user");
+        setError(err.error || "Failed to delete buyer");
       }
     } catch (err) {
-      console.error("Error deleting user:", err);
-      setError("Server error while deleting user");
+      console.error("Error deleting buyer:", err);
+      setError("Server error while deleting buyer");
     }
   };
 
-  // Edit user
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData({ fullname: user.fullname, email: user.email, password: "" });
+  // Toggle buyer status
+  const toggleBuyerStatus = async (id, currentStatus) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/admin/buyers/${id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: currentStatus === "active" ? "suspended" : "active",
+          }),
+        }
+      );
+
+      if (res.ok) {
+        fetchBuyers();
+      } else {
+        const err = await res.json();
+        setError(err.error || "Failed to update buyer status");
+      }
+    } catch (err) {
+      console.error("Error updating buyer status:", err);
+      setError("Server error while updating buyer status");
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = (buyer) => {
+    setEditBuyer(buyer);
+    setEditForm({
+      firstname: buyer.firstname || "",
+      secondname: buyer.secondname || "",
+      email: buyer.email || "",
+      phone: buyer.phone || "",
+      status: buyer.status || "active",
+    });
+  };
+
+  // Handle edit form change
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Save buyer update
+  const saveBuyerUpdate = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/admin/buyers/${editBuyer.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editForm),
+        }
+      );
+
+      if (res.ok) {
+        setEditBuyer(null);
+        fetchBuyers();
+      } else {
+        const err = await res.json();
+        setError(err.error || "Failed to update buyer");
+      }
+    } catch (err) {
+      console.error("Error saving buyer update:", err);
+      setError("Server error while updating buyer");
+    }
   };
 
   // Search filter
   useEffect(() => {
-    const filtered = users.filter(
-      (u) =>
-        u.fullname.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase())
+    const filtered = buyers.filter(
+      (buyer) =>
+        buyer.firstname?.toLowerCase().includes(search.toLowerCase()) ||
+        buyer.secondname?.toLowerCase().includes(search.toLowerCase()) ||
+        buyer.email?.toLowerCase().includes(search.toLowerCase())
     );
-    setFilteredUsers(filtered);
+    setFilteredBuyers(filtered);
     setCurrentPage(1);
-  }, [search, users]);
+  }, [search, buyers]);
 
   // Pagination
   const indexOfLast = currentPage * perPage;
   const indexOfFirst = indexOfLast - perPage;
-  const currentUsers = filteredUsers.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredUsers.length / perPage);
+  const currentBuyers = filteredBuyers.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredBuyers.length / perPage);
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading buyers...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">👥 User Management</h2>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6">Manage Buyers</h1>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
-      {/* Add/Edit Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col gap-3"
-      >
-        <h3 className="text-lg font-semibold">
-          {editingUser ? "✏️ Edit User" : "➕ Add New User"}
-        </h3>
-
-        <input
-          type="text"
-          name="fullname"
-          placeholder="Full Name"
-          value={formData.fullname}
-          onChange={handleChange}
-          required
-          className="border px-3 py-2 rounded-lg"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="border px-3 py-2 rounded-lg"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder={editingUser ? "Leave blank to keep current password" : "Password"}
-          value={formData.password}
-          onChange={handleChange}
-          className="border px-3 py-2 rounded-lg"
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
-        >
-          {editingUser ? "Update User" : "Create User"}
-        </button>
-      </form>
+      <p className="mb-4 text-gray-700">
+        View, update, suspend/activate, and delete buyer accounts.
+      </p>
 
       {/* Search */}
-      <input
-        type="text"
-        placeholder="🔍 Search by name or email..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 border px-3 py-2 rounded-lg w-full"
-      />
-
-      {/* Users Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-3 border-b">#</th>
-              <th className="p-3 border-b">Full Name</th>
-              <th className="p-3 border-b">Email</th>
-              <th className="p-3 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentUsers.map((user, index) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{indexOfFirst + index + 1}</td>
-                <td className="p-3 border-b">{user.fullname}</td>
-                <td className="p-3 border-b">{user.email}</td>
-                <td className="p-3 border-b flex gap-2">
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="bg-yellow-400 px-3 py-1 rounded-lg hover:bg-yellow-500"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {currentUsers.length === 0 && (
-              <tr>
-                <td colSpan="4" className="text-center p-4 text-gray-500">
-                  No users found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="🔍 Search buyers by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border px-4 py-2 rounded-lg w-full max-w-md"
+        />
       </div>
+
+      <table className="w-full border-collapse bg-white shadow rounded-lg">
+        <thead>
+          <tr className="bg-gray-200 text-left">
+            <th className="p-3">Name</th>
+            <th className="p-3">Email</th>
+            <th className="p-3">Phone</th>
+            <th className="p-3">Status</th>
+            <th className="p-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentBuyers.map((buyer) => (
+            <tr key={buyer.id} className="border-t hover:bg-gray-50">
+              <td className="p-3">
+                {buyer.firstname} {buyer.secondname}
+              </td>
+              <td className="p-3">{buyer.email}</td>
+              <td className="p-3">{buyer.phone || "N/A"}</td>
+              <td className="p-3">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    buyer.status === "active"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {buyer.status || "active"}
+                </span>
+              </td>
+              <td className="p-3 space-x-2">
+                <button
+                  onClick={() => setSelectedBuyer(buyer)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => openEditModal(buyer)}
+                  className="px-3 py-1 bg-indigo-500 text-white rounded text-sm hover:bg-indigo-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => toggleBuyerStatus(buyer.id, buyer.status)}
+                  className={`px-3 py-1 text-white rounded text-sm ${
+                    buyer.status === "active"
+                      ? "bg-yellow-500 hover:bg-yellow-600"
+                      : "bg-green-500 hover:bg-green-600"
+                  }`}
+                >
+                  {buyer.status === "active" ? "Suspend" : "Activate"}
+                </button>
+                <button
+                  onClick={() => handleDelete(buyer.id)}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+
+          {currentBuyers.length === 0 && (
+            <tr>
+              <td colSpan="5" className="p-4 text-center text-gray-500">
+                {buyers.length === 0
+                  ? "No buyers found."
+                  : "No matching buyers found."}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
       {/* Pagination */}
-      <div className="flex justify-center mt-4 gap-2">
-        <button
-          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 border rounded-lg disabled:opacity-50"
-        >
-          ◀ Prev
-        </button>
-        <span className="px-3 py-1">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 border rounded-lg disabled:opacity-50"
-        >
-          Next ▶
-        </button>
-      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6 gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
+          >
+            ◀ Previous
+          </button>
+          <span className="px-4 py-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
+          >
+            Next ▶
+          </button>
+        </div>
+      )}
+
+      {/* View Buyer Modal */}
+      {selectedBuyer && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Buyer Details</h2>
+            <p>
+              <strong>Name:</strong> {selectedBuyer.firstname}{" "}
+              {selectedBuyer.secondname}
+            </p>
+            <p>
+              <strong>Email:</strong> {selectedBuyer.email}
+            </p>
+            <p>
+              <strong>Phone:</strong> {selectedBuyer.phone || "N/A"}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedBuyer.status}
+            </p>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setSelectedBuyer(null)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Buyer Modal */}
+      {editBuyer && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Edit Buyer</h2>
+            <div className="space-y-3">
+              <input
+                type="text"
+                name="firstname"
+                value={editForm.firstname}
+                onChange={handleEditChange}
+                placeholder="First name"
+                className="border px-3 py-2 w-full rounded"
+              />
+              <input
+                type="text"
+                name="secondname"
+                value={editForm.secondname}
+                onChange={handleEditChange}
+                placeholder="Second name"
+                className="border px-3 py-2 w-full rounded"
+              />
+              <input
+                type="email"
+                name="email"
+                value={editForm.email}
+                onChange={handleEditChange}
+                placeholder="Email"
+                className="border px-3 py-2 w-full rounded"
+              />
+              <input
+                type="text"
+                name="phone"
+                value={editForm.phone}
+                onChange={handleEditChange}
+                placeholder="Phone"
+                className="border px-3 py-2 w-full rounded"
+              />
+              <select
+                name="status"
+                value={editForm.status}
+                onChange={handleEditChange}
+                className="border px-3 py-2 w-full rounded"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setEditBuyer(null)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveBuyerUpdate}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default UserManagement;
-
+export default BuyersManagement;

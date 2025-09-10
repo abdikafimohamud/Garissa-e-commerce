@@ -309,3 +309,83 @@ def get_current_user():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+
+@auth_bp.route('/admin/sellers', methods=['GET'])
+def get_all_sellers():
+    try:
+        # Check if user is admin
+        if not session.get('is_admin'):
+            return jsonify({"error": "Admin access required"}), 403
+        
+        sellers = User.query.filter_by(account_type='seller').all()
+        return jsonify({
+            "sellers": [seller.to_dict() for seller in sellers]
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@auth_bp.route('/admin/sellers/<int:seller_id>', methods=['DELETE'])
+def delete_seller(seller_id):
+    try:
+        if not session.get('is_admin'):
+            return jsonify({"error": "Admin access required"}), 403
+        
+        seller = User.query.filter_by(id=seller_id, account_type='seller').first()
+        if not seller:
+            return jsonify({"error": "Seller not found"}), 404
+        
+        db.session.delete(seller)
+        db.session.commit()
+        
+        return jsonify({"message": "Seller deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+@auth_bp.route('/admin/sellers/<int:seller_id>/status', methods=['PATCH'])
+def update_seller_status(seller_id):
+    try:
+        if not session.get('is_admin'):
+            return jsonify({"error": "Admin access required"}), 403
+        
+        seller = User.query.filter_by(id=seller_id, account_type='seller').first()
+        if not seller:
+            return jsonify({"error": "Seller not found"}), 404
+        
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if new_status not in ['active', 'suspended']:
+            return jsonify({"error": "Invalid status"}), 400
+        
+        seller.status = new_status
+        db.session.commit()
+        
+        return jsonify({"message": f"Seller status updated to {new_status}"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/admin/sellers/<int:seller_id>/approve', methods=['PATCH'])
+def approve_seller(seller_id):
+    try:
+        if not session.get('is_admin'):
+            return jsonify({"error": "Admin access required"}), 403
+        
+        seller = User.query.filter_by(id=seller_id, account_type='seller').first()
+        if not seller:
+            return jsonify({"error": "Seller not found"}), 404
+        
+        seller.status = 'active'
+        db.session.commit()
+        
+        return jsonify({"message": "Seller approved successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+

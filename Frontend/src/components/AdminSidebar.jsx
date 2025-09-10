@@ -49,15 +49,6 @@ export default function AdminSidebar() {
             <FiUsers className="mr-3" /> Manage Buyers
           </NavLink>
 
-          {/* Product Management */}
-          <NavLink to="/admin/products" className={linkClasses}>
-            <FiBox className="mr-3" /> Manage Products
-          </NavLink>
-
-          {/* Orders Management */}
-          <NavLink to="/admin/orders" className={linkClasses}>
-            <FiShoppingCart className="mr-3" /> Manage Orders
-          </NavLink>
 
           {/* Analytics */}
           <NavLink to="/admin/analytics" className={linkClasses}>

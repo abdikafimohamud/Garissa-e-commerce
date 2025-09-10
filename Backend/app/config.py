@@ -9,7 +9,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///garissa.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # JWT Configuration (if you use it)
+    # JWT Configuration
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwtsecretkey")
     JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
     
@@ -17,7 +17,7 @@ class Config:
     CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
     CORS_SUPPORTS_CREDENTIALS = True
     CORS_ALLOW_HEADERS = ["Content-Type", "Authorization", "Accept"]
-    CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]  # ✅ PATCH added
     CORS_EXPOSE_HEADERS = ["Content-Type", "Authorization"]
     
     # Session Configuration
@@ -25,8 +25,8 @@ class Config:
     SESSION_PERMANENT = True
     SESSION_USE_SIGNER = True
     SESSION_COOKIE_NAME = "garissa_session"
-    SESSION_COOKIE_SAMESITE = "Lax"   # Changed from "None" to "Lax" for better security
-    SESSION_COOKIE_SECURE = False      # Set to True in production with HTTPS
+    SESSION_COOKIE_SAMESITE = "Lax"   # Changed from "None" to "Lax"
+    SESSION_COOKIE_SECURE = False      # Set True in production with HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_PATH = "/"
     SESSION_COOKIE_DOMAIN = None       # None = works for localhost

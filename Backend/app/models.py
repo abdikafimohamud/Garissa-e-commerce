@@ -3,19 +3,27 @@ from datetime import datetime
 import bcrypt
 from sqlalchemy.sql import func
 
+
 class User(db.Model):
     __tablename__ = 'users'
 
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
+
+    # Basic Info
     firstname = db.Column(db.String(50), nullable=False)
     secondname = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     profile_pic = db.Column(db.String(255), nullable=True, default=None)
-    account_type = db.Column(db.String(20), nullable=False, default='buyer')  # buyer or seller
 
-    # timestamps
+    # Role & Status
+    account_type = db.Column(db.String(20), nullable=False, default='buyer')  # 'buyer' or 'seller'
+    status = db.Column(db.String(10), default='pending')  # 'pending', 'active', 'suspended'
+    is_admin = db.Column(db.Boolean, default=False)  # NEW FIELD for admin users
+
+    # Timestamps
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -23,7 +31,7 @@ class User(db.Model):
         onupdate=func.now()
     )
 
-    # Relationships
+    # Relationships (assuming these models exist)
     orders = db.relationship('Order', backref='user', lazy=True)
     addresses = db.relationship('Address', backref='user', lazy=True)
     payments = db.relationship('Payment', backref='user', lazy=True)
@@ -49,6 +57,8 @@ class User(db.Model):
             "phone": self.phone,
             "profile_pic": self.profile_pic,
             "account_type": self.account_type,
+            "status": self.status,
+            "is_admin": self.is_admin,  # Include in API responses
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

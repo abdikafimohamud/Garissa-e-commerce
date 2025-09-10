@@ -49,8 +49,6 @@ import AdminDashboardLayout from "./admin/AdminDashboardLayout";
 import AdminHome from "./admin/AdminHome";
 import SellersManagement from "./admin/SellersManagement";
 import BuyersManagement from "./admin/BuyersManagement";
-import ProductsManagement from "./admin/ProductsManagement";
-import OrdersManagement from "./admin/OrdersManagement";
 import Analytics from "./admin/Analytics";
 import Earnings from "./admin/Earnings";
 import NotificationManagement from "./admin/NotificationManagement";
@@ -167,8 +165,6 @@ function App() {
           <Route path="home" element={<AdminHome />} />
           <Route path="sellers" element={<SellersManagement />} />
           <Route path="buyers" element={<BuyersManagement />} />
-          <Route path="products" element={<ProductsManagement />} />
-          <Route path="orders" element={<OrdersManagement />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="earnings" element={<Earnings />} />
           <Route path="NotificationManagement" element={<NotificationManagement />} />
