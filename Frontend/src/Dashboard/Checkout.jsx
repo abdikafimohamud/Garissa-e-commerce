@@ -188,23 +188,24 @@ const Checkout = ({ cartItems, clearCart }) => {
       
       // Redirect to orders page after a short delay
       setTimeout(() => {
-        navigate("/Buyers/orders", { 
-          state: { 
-            order: {
-              id: result.order.order_number,
-              date: result.order.created_at,
-              status: result.order.status,
-              items: [...cartItems],
-              subtotal,
-              tax,
-              shipping,
-              total,
-              paymentMethod,
-              shippingInfo: orderData.shipping_info
-            }
-          } 
-        });
-      }, 2000);
+    navigate("/Buyers/order-details", { 
+    state: { 
+      order: {
+        id: result.order.order_number,
+        date: result.order.created_at,
+        status: result.order.status,
+        items: [...cartItems],
+        subtotal,
+        tax,
+        shipping,
+        total,
+        paymentMethod,
+        shippingInfo: orderData.shipping_info
+      }
+    } 
+  });
+    }, 2000);
+
     } catch (error) {
       console.error("Order submission error:", error);
       setError(error.message);
@@ -254,7 +255,7 @@ const Checkout = ({ cartItems, clearCart }) => {
           Continue Shopping
           </Link>
           <Link
-            to="/Buyers/orders"
+            to="/Buyers/order-details"
             className="inline-block bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-red-300 text-gray-800 font-medium py-2 px-6 rounded-lg transition-colors"
           >
             View Orders

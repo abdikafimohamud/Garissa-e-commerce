@@ -40,7 +40,7 @@ import Electronics from "./Dashboard/Electronics";
 import Sports from "./Dashboard/Sports";
 import Cart from "./Dashboard/Cart";
 import Checkout from "./Dashboard/Checkout";
-import ViewOrders from "./Dashboard/ViewOrders";
+import OrderDetails from "./Dashboard/OrderDetails";
 import Profilee from "./Dashboard/Profilee";
 import Notifications from "./Dashboard/Notifications";
 
@@ -139,7 +139,7 @@ function App() {
             path="checkout" 
             element={<Checkout cartItems={cartItems} clearCart={clearCart} />} 
           />
-          <Route path="orders" element={<ViewOrders />} />
+          <Route path="/Buyers/order-details" element={<OrderDetails />} />
           <Route path="Notifications" element={<Notifications />} />
         </Route>
         

@@ -32,14 +32,15 @@ class Config:
     SESSION_COOKIE_DOMAIN = None       # None = works for localhost
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
-    # Flask-Mail Configuration
+    # config.py
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
-    MAIL_USERNAME = "abdikafimohamud126@gmail.com"
-    MAIL_PASSWORD = "erwa igfl djgl mpii"
-    MAIL_DEFAULT_SENDER = "abdikafimohamud126@gmail.com"
-    
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = 'garissastore292@gmail.com'   # <-- your Gmail
+    MAIL_PASSWORD = 'gbdr opkg lyfk cnua'        # <-- Gmail App Password
+    MAIL_DEFAULT_SENDER = 'garissastore292@gmail.com'
+
     # File upload configuration
     UPLOAD_FOLDER = 'uploads/profile_pictures'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

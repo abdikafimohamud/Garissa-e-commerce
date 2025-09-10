@@ -1,6 +1,8 @@
+# routes/user.py
 from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models import User
+from utils.email_utils import send_welcome_email
 import bcrypt
 import re
 
@@ -20,7 +22,7 @@ def register_user():
         email = data.get('email', "").strip().lower()
         password = data.get('password', "")
         phone = data.get('phone', "")
-        account_type = data.get('accountType', 'buyer')  # Get account type
+        account_type = data.get('accountType', 'buyer')  # Default to buyer
 
         # =========================
         # FIELD VALIDATION
@@ -54,14 +56,13 @@ def register_user():
         # =========================
         # USER CREATION
         # =========================
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        hashed_password_str = hashed_password.decode('utf-8')
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         new_user = User(
             firstname=firstname,
             secondname=secondname,
             email=email,
-            password=hashed_password_str,
+            password=hashed_password,
             phone=phone,
             account_type=account_type
         )
@@ -69,6 +70,18 @@ def register_user():
         db.session.add(new_user)
         db.session.commit()
 
+        # =========================
+        # SEND WELCOME EMAIL
+        # =========================
+        try:
+            send_welcome_email(new_user.email, new_user.firstname)
+        except Exception as email_error:
+            # Log email failure but don't block registration
+            print(f"❌ Failed to send welcome email: {email_error}")
+
+        # =========================
+        # RESPONSE
+        # =========================
         return jsonify({
             "message": "User registered successfully.",
             "account_type": account_type,
@@ -78,6 +91,7 @@ def register_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
+
 
 # =========================
 # BUYER LOGIN ROUTE

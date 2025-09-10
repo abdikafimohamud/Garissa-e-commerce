@@ -1,3 +1,5 @@
+# app/__init__.py
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -5,7 +7,6 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_session import Session
 from app.config import Config
-import os
 
 # ===== Extensions =====
 db = SQLAlchemy()
@@ -21,9 +22,9 @@ def ensure_upload_dir():
 
 def create_app():
     app = Flask(__name__)
-    
+
     # Load configuration
-    app.config.from_object(Config)
+    app.config.from_object(Config)  # ✅ Use Config class directly
 
     # Ensure upload directory exists
     ensure_upload_dir()
@@ -34,14 +35,14 @@ def create_app():
         origins=Config.CORS_ORIGINS,
         supports_credentials=True,
         allow_headers=Config.CORS_ALLOW_HEADERS,
-        methods=Config.CORS_METHODS,  # ✅ includes PATCH now
+        methods=Config.CORS_METHODS,  # ✅ includes PATCH
         expose_headers=Config.CORS_EXPOSE_HEADERS
     )
 
     # ===== Init Extensions =====
     db.init_app(app)
     migrate.init_app(app, db)
-    mail.init_app(app)
+    mail.init_app(app)  # ✅ Flask-Mail initialized correctly
     session.init_app(app)
 
     # ===== Import Models =====
@@ -54,7 +55,6 @@ def create_app():
     from routes.notifications import notifications_bp  
     from routes.admin_routes import admin_bp
     from routes.admin_seller_routes import admin_seller_bp
-    
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(products_bp)
@@ -76,6 +76,13 @@ def create_app():
             domain=app.config.get('SESSION_COOKIE_DOMAIN')
         )
         return response
+
+    # ===== Import Email Utility =====
+    from utils.email_utils import send_welcome_email
+
+    # Optional: Example usage (call after user registration)
+    # Note: In practice, call this inside your registration route, not here
+    # send_welcome_email(user.email, user.firstname)
 
     return app
 

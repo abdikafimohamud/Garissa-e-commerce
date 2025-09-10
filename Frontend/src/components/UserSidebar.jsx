@@ -1,8 +1,6 @@
-// src/components/UserSidebar.jsx
 import { NavLink } from "react-router-dom";
 
 export default function UserSidebar() {
-
   const menuItems = [
     { path: "/Buyers/dashboard-home", label: "Dashboard Home", icon: "🏠" },
     { path: "/Buyers/clothes", label: "Clothes", icon: "👕" },
@@ -11,16 +9,16 @@ export default function UserSidebar() {
     { path: "/Buyers/sports", label: "Sports", icon: "🏀" },
     { path: "/Buyers/cart", label: "Cart", icon: "🛒" },
     { path: "/Buyers/checkout", label: "Checkout", icon: "💰" },
-    { path: "/Buyers/orders", label: "View Orders", icon: "📋" },
-    { path: "/Buyers/Profilee", label: "Profile", icon: "👤" },
-    { path: "/Buyers/Notifications", label: "Notifications", icon: "🔔" },
+    { path: "/Buyers/order-details", label: "Order Details", icon: "📋" }, // lowercase path
+    { path: "/Buyers/profilee", label: "Profile", icon: "👤" },
+    { path: "/Buyers/notifications", label: "Notifications", icon: "🔔" },
   ];
 
   const baseClasses =
     "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200";
   const activeClasses = "bg-blue-600 text-white shadow-md";
   const inactiveClasses =
-    "text-gray-300 hover:bg-gray-700 hover:text-white";
+    "text-white hover:bg-gray-700 hover:text-white";
 
   return (
     <aside className="w-64 bg-gradient-to-r from-green-500 to-yellow-500 text-white min-h-screen flex flex-col shadow-lg">
@@ -36,7 +34,6 @@ export default function UserSidebar() {
             <li key={item.path}>
               <NavLink
                 to={item.path}
-                end
                 className={({ isActive }) =>
                   `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
                 }
@@ -48,7 +45,6 @@ export default function UserSidebar() {
           ))}
         </ul>
       </nav>
-
     </aside>
   );
 }
