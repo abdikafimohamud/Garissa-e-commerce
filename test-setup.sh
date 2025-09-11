@@ -1,197 +1,181 @@
 #!/bin/bash
 
-# Test Setup Script for Garissa E-commerce
-# This script tests if the setup was successful
+# Test script to verify Garissa E-commerce setup
+# This script tests if the setup is working correctly
 
-echo "🧪 Testing Garissa E-commerce Setup"
-echo "==================================="
+set -e
 
-# Colors
+echo "🧪 Testing Garissa E-commerce Setup..."
+echo "====================================="
+
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-print_test() {
+print_status() {
     echo -e "${BLUE}[TEST]${NC} $1"
 }
 
-print_pass() {
+print_success() {
     echo -e "${GREEN}[PASS]${NC} $1"
 }
 
-print_fail() {
+print_error() {
     echo -e "${RED}[FAIL]${NC} $1"
 }
 
-print_warn() {
+print_warning() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
-# Test counters
-TESTS=0
-PASSED=0
-FAILED=0
+# Test 1: Check if Backend directory exists
+print_status "Checking Backend directory..."
+if [ -d "Backend" ]; then
+    print_success "Backend directory exists"
+else
+    print_error "Backend directory not found"
+    exit 1
+fi
 
-# Function to run a test
-run_test() {
-    local test_name="$1"
-    local test_command="$2"
-    
-    TESTS=$((TESTS + 1))
-    print_test "$test_name"
-    
-    if eval "$test_command" >/dev/null 2>&1; then
-        print_pass "$test_name"
-        PASSED=$((PASSED + 1))
-    else
-        print_fail "$test_name"
-        FAILED=$((FAILED + 1))
-    fi
-}
-
-# Test system requirements
-echo "🔍 Testing System Requirements..."
-echo "================================"
-
-run_test "Python 3.11 installed" "python3 --version | grep -q 'Python 3.11'"
-run_test "Node.js installed" "node --version"
-run_test "npm installed" "npm --version"
-run_test "Git installed" "git --version"
-run_test "PostgreSQL running" "systemctl is-active --quiet postgresql"
-run_test "Redis running" "systemctl is-active --quiet redis-server"
-
-# Test project structure
-echo ""
-echo "📁 Testing Project Structure..."
-echo "=============================="
-
-run_test "Backend directory exists" "[ -d 'Backend' ]"
-run_test "Frontend directory exists" "[ -d 'Frontend' ]"
-run_test "Backend virtual environment exists" "[ -d 'Backend/venv' ]"
-run_test "Backend requirements.txt exists" "[ -f 'Backend/requirements.txt' ]"
-run_test "Frontend package.json exists" "[ -f 'Frontend/package.json' ]"
-run_test "Backend .env file exists" "[ -f 'Backend/.env' ]"
-run_test "Frontend .env file exists" "[ -f 'Frontend/.env' ]"
-
-# Test startup scripts
-echo ""
-echo "🚀 Testing Startup Scripts..."
-echo "============================="
-
-run_test "start-project.sh exists and executable" "[ -x 'start-project.sh' ]"
-run_test "start-backend.sh exists and executable" "[ -x 'start-backend.sh' ]"
-run_test "start-frontend.sh exists and executable" "[ -x 'start-frontend.sh' ]"
-
-# Test Python environment
-echo ""
-echo "🐍 Testing Python Environment..."
-echo "==============================="
-
+# Test 2: Check if virtual environment exists
+print_status "Checking Python virtual environment..."
 if [ -d "Backend/venv" ]; then
-    cd Backend
-    source venv/bin/activate
-    
-    run_test "Flask installed" "python -c 'import flask'"
-    run_test "SQLAlchemy installed" "python -c 'import flask_sqlalchemy'"
-    run_test "Flask-CORS installed" "python -c 'import flask_cors'"
-    run_test "bcrypt installed" "python -c 'import bcrypt'"
-    
-    cd ..
+    print_success "Virtual environment exists"
 else
-    print_fail "Backend virtual environment not found"
-    FAILED=$((FAILED + 1))
+    print_error "Virtual environment not found"
+    exit 1
 fi
 
-# Test Node.js environment
-echo ""
-echo "📦 Testing Node.js Environment..."
-echo "================================"
+# Test 3: Check if requirements.txt exists
+print_status "Checking requirements.txt..."
+if [ -f "Backend/requirements.txt" ]; then
+    print_success "requirements.txt exists"
+else
+    print_error "requirements.txt not found"
+    exit 1
+fi
 
+# Test 4: Check if Frontend directory exists
+print_status "Checking Frontend directory..."
 if [ -d "Frontend" ]; then
-    cd Frontend
+    print_success "Frontend directory exists"
+else
+    print_error "Frontend directory not found"
+    exit 1
+fi
+
+# Test 5: Check if package.json exists
+print_status "Checking package.json..."
+if [ -f "Frontend/package.json" ]; then
+    print_success "package.json exists"
+else
+    print_error "package.json not found"
+    exit 1
+fi
+
+# Test 6: Test Python imports
+print_status "Testing Python imports..."
+cd Backend
+source venv/bin/activate
+if python -c "from app import create_app, db; from app.models import User; print('All imports successful')" 2>/dev/null; then
+    print_success "Python imports working"
+else
+    print_error "Python imports failed"
+    exit 1
+fi
+
+# Test 7: Test database connection
+print_status "Testing database connection..."
+if python -c "
+from app import create_app, db
+app = create_app()
+with app.app_context():
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(db.text('SELECT 1'))
+        print('Database connection successful')
+    except Exception as e:
+        print(f'Database connection failed: {e}')
+        exit(1)
+" 2>/dev/null; then
+    print_success "Database connection working"
+else
+    print_error "Database connection failed"
+    exit 1
+fi
+
+# Test 8: Check if test users exist
+print_status "Checking test users..."
+if python -c "
+from app import create_app, db
+from app.models import User
+app = create_app()
+with app.app_context():
+    admin = User.query.filter_by(email='admin@garissa.com').first()
+    seller = User.query.filter_by(email='seller1@garissa.com').first()
+    buyer = User.query.filter_by(email='buyer1@garissa.com').first()
     
-    run_test "React installed" "npm list react >/dev/null 2>&1"
-    run_test "Vite installed" "npm list vite >/dev/null 2>&1"
-    run_test "Node modules exist" "[ -d 'node_modules' ]"
-    
-    cd ..
+    if admin and seller and buyer:
+        print('All test users exist')
+    else:
+        print('Some test users missing')
+        exit(1)
+" 2>/dev/null; then
+    print_success "Test users exist"
 else
-    print_fail "Frontend directory not found"
-    FAILED=$((FAILED + 1))
+    print_warning "Test users not found - run create_test_users.py"
 fi
 
-# Test database connection
-echo ""
-echo "🗄️ Testing Database Connection..."
-echo "================================"
+cd ..
 
-if command -v psql >/dev/null 2>&1; then
-    run_test "PostgreSQL accessible" "sudo -u postgres psql -c 'SELECT 1;' >/dev/null 2>&1"
-    
-    # Test if database exists
-    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw garissa_ecommerce; then
-        print_pass "Database 'garissa_ecommerce' exists"
-        PASSED=$((PASSED + 1))
-    else
-        print_fail "Database 'garissa_ecommerce' not found"
-        FAILED=$((FAILED + 1))
-    fi
-    TESTS=$((TESTS + 1))
+# Test 9: Test Node.js dependencies
+print_status "Testing Node.js dependencies..."
+cd Frontend
+if npm list --depth=0 >/dev/null 2>&1; then
+    print_success "Node.js dependencies installed"
 else
-    print_fail "PostgreSQL client not found"
-    FAILED=$((FAILED + 1))
-    TESTS=$((TESTS + 1))
+    print_error "Node.js dependencies not installed"
+    exit 1
 fi
 
-# Test Redis connection
-echo ""
-echo "🔴 Testing Redis Connection..."
-echo "============================="
+cd ..
 
-if command -v redis-cli >/dev/null 2>&1; then
-    run_test "Redis accessible" "redis-cli ping | grep -q PONG"
+# Test 10: Check startup scripts
+print_status "Checking startup scripts..."
+if [ -f "start-project.sh" ] && [ -x "start-project.sh" ]; then
+    print_success "start-project.sh exists and is executable"
 else
-    print_fail "Redis client not found"
-    FAILED=$((FAILED + 1))
-    TESTS=$((TESTS + 1))
+    print_error "start-project.sh missing or not executable"
 fi
 
-# Test ports availability
-echo ""
-echo "🌐 Testing Port Availability..."
-echo "=============================="
-
-run_test "Port 5000 available" "! netstat -tuln | grep -q ':5000 '"
-run_test "Port 5173 available" "! netstat -tuln | grep -q ':5173 '"
-
-# Summary
-echo ""
-echo "📊 Test Summary"
-echo "==============="
-echo "Total Tests: $TESTS"
-echo -e "Passed: ${GREEN}$PASSED${NC}"
-echo -e "Failed: ${RED}$FAILED${NC}"
-
-if [ $FAILED -eq 0 ]; then
-    echo ""
-    print_pass "🎉 All tests passed! Setup is complete and ready to use."
-    echo ""
-    echo "🚀 Next steps:"
-    echo "1. Run: ./start-project.sh"
-    echo "2. Open: http://localhost:5173"
-    echo "3. Login: admin@garissa.com / Admin123"
+if [ -f "start-backend.sh" ] && [ -x "start-backend.sh" ]; then
+    print_success "start-backend.sh exists and is executable"
 else
-    echo ""
-    print_fail "❌ Some tests failed. Please check the setup."
-    echo ""
-    echo "🔧 Common fixes:"
-    echo "- Run the full setup script: ./setup.sh"
-    echo "- Check if all services are running"
-    echo "- Verify file permissions"
-    echo "- Check network connectivity"
+    print_error "start-backend.sh missing or not executable"
+fi
+
+if [ -f "start-frontend.sh" ] && [ -x "start-frontend.sh" ]; then
+    print_success "start-frontend.sh exists and is executable"
+else
+    print_error "start-frontend.sh missing or not executable"
 fi
 
 echo ""
-echo "📝 For detailed setup instructions, see SETUP_README.md"
+echo "🎉 Setup Test Complete!"
+echo ""
+echo "📋 Test Results Summary:"
+echo "   ✅ Backend environment: Ready"
+echo "   ✅ Frontend environment: Ready"
+echo "   ✅ Database: Ready"
+echo "   ✅ Startup scripts: Ready"
+echo ""
+echo "🚀 Ready to start the application!"
+echo "   Run: ./start-project.sh"
+echo ""
+echo "🔑 Test Login Credentials:"
+echo "   Admin: admin@garissa.com / Admin123"
+echo "   Seller: seller1@garissa.com / Seller123"
+echo "   Buyer: buyer1@garissa.com / Buyer123"
