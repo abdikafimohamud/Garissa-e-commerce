@@ -133,6 +133,9 @@ def login_buyer():
 # =========================
 # SELLER LOGIN ROUTE
 # =========================
+# =========================
+# SELLER LOGIN ROUTE
+# =========================
 @auth_bp.route('/login/seller', methods=['POST'])
 def login_seller():
     try:
@@ -147,16 +150,20 @@ def login_seller():
         if not user:
             return jsonify({'error': 'Invalid email or not a seller account'}), 401
 
-        # Check password using bcrypt
+        # Check password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
-        # Create session
+        # ✅ Clear any previous session before starting a new one
+        session.clear()
+
+        # ✅ Create new session with seller_id for product routes
         session['user_id'] = user.id
+        session['seller_id'] = user.id          # <-- add this line
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
-        session['logged_in'] = True  # Add session flag
+        session['logged_in'] = True
 
         return jsonify({
             "message": "Seller login successful",
@@ -166,6 +173,8 @@ def login_seller():
 
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
+
+
 
 
 @auth_bp.route('/logout', methods=['POST'])

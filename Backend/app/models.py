@@ -16,12 +16,13 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
-    profile_pic = db.Column(db.String(255), nullable=True, default=None)
+    profile_pic = db.Column(db.String(255), nullable=True, default=None)  # URL for backward compatibility
+    profile_pic_filename = db.Column(db.String(255), nullable=True)  # NEW: For uploaded profile pictures
 
     # Role & Status
     account_type = db.Column(db.String(20), nullable=False, default='buyer')  # 'buyer' or 'seller'
     status = db.Column(db.String(10), default='pending')  # 'pending', 'active', 'suspended'
-    is_admin = db.Column(db.Boolean, default=False)  # NEW FIELD for admin users
+    is_admin = db.Column(db.Boolean, default=False)
 
     # Timestamps
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
@@ -49,16 +50,21 @@ class User(db.Model):
         """
         Convert the user object to a dictionary (excluding sensitive info like password).
         """
+        # Use profile_pic if available, otherwise generate URL from filename
+        profile_pic = self.profile_pic
+        if not profile_pic and self.profile_pic_filename:
+            profile_pic = f'/uploads/{self.profile_pic_filename}'
+            
         return {
             "id": self.id,
             "firstname": self.firstname,
             "secondname": self.secondname,
             "email": self.email,
             "phone": self.phone,
-            "profile_pic": self.profile_pic,
+            "profile_pic": profile_pic,
             "account_type": self.account_type,
             "status": self.status,
-            "is_admin": self.is_admin,  # Include in API responses
+            "is_admin": self.is_admin,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -66,7 +72,7 @@ class User(db.Model):
 
 class Product(db.Model):
     __tablename__ = 'products'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
@@ -75,16 +81,21 @@ class Product(db.Model):
     subcategory = db.Column(db.String(50))
     brand = db.Column(db.String(50))
     image_url = db.Column(db.String(255))
+    image_filename = db.Column(db.String(255))
     stock = db.Column(db.Integer, default=0)
     rating = db.Column(db.Float, default=0.0)
     is_new = db.Column(db.Boolean, default=False)
     is_best_seller = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    order_items = db.relationship('OrderItem', backref='product', lazy=True)
+
+    # ✅ Link product to its seller
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    seller = db.relationship('User', backref='products')
 
     def to_dict(self):
+        image_url = self.image_url
+        if not image_url and self.image_filename:
+            image_url = f'/uploads/{self.image_filename}'
         return {
             "id": self.id,
             "name": self.name,
@@ -93,12 +104,13 @@ class Product(db.Model):
             "category": self.category,
             "subcategory": self.subcategory,
             "brand": self.brand,
-            "image_url": self.image_url,
+            "image_url": image_url,
             "stock": self.stock,
             "rating": self.rating,
             "is_new": self.is_new,
             "is_best_seller": self.is_best_seller,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "seller_id": self.seller_id            # expose seller for debugging
         }
 
 

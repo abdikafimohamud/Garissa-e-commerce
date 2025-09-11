@@ -15,16 +15,28 @@ import { useAuth } from "../context/AuthContext";
 const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // removed loading for consistency
+  const { user, setUser, logout } = useAuth(); // added setUser for clearing context
 
   const handleLogout = async () => {
     try {
-      const result = await logout();
-      if (result.success) {
+      // call backend to clear the Flask session cookie
+      const response = await fetch("http://localhost:5000/logout", {
+        method: "POST",
+        credentials: "include", // send/clear cookie session
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success !== false) {
+        // remove any stored auth info (token, user object, etc.)
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        if (logout) await logout();     // if logout() also does cleanup
+        if (setUser) setUser(null);     // make sure context is empty
+
         setIsUserDropdownOpen(false);
-        navigate("/");
+        navigate("/login");
       } else {
-        console.error("Logout failed:", result.message);
+        console.error("Logout failed:", result.message || "Unknown error");
       }
     } catch (error) {
       console.error("Error during logout:", error);

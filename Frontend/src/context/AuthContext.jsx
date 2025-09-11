@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch(`${API_URL}/check-auth`, {
         method: "GET",
-        credentials: "include", // ✅ send cookies
+        credentials: "include", // send cookies
       });
 
       if (response.ok) {
@@ -64,38 +64,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🚀 Run once on mount
+  // Run once on mount
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  // ✅ Login - Updated to use the correct endpoint based on account type
+  // ✅ Login
   const login = async (email, password, accountType) => {
     if (!email || !password) {
       return { success: false, message: "Enter both email and password" };
     }
 
     try {
-      // Use the specific endpoint for buyer or seller login
-      const endpoint = accountType === 'buyer' ? '/login/buyer' : '/login/seller';
-      
+      const endpoint =
+        accountType === "buyer" ? "/login/buyer" : "/login/seller";
+
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
-      // Check if response is OK before trying to parse JSON
       if (res.ok) {
         const data = await res.json();
+
+        // ✅ Clear any previous auth state before setting new
+        setUser(null);
+        setIsAuthenticated(false);
+
         setUser(data.user);
         setIsAuthenticated(true);
         return { success: true, redirect: data.redirect, user: data.user };
       } else {
-        // Handle different HTTP error statuses
         if (res.status === 401) {
           const data = await res.json();
           return { success: false, message: data.error || "Invalid credentials" };
@@ -148,5 +151,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ Custom hook
+// Custom hook
 export const useAuth = () => useContext(AuthContext);

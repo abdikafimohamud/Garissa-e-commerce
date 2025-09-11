@@ -1,4 +1,3 @@
-# app/__init__.py
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -24,25 +23,25 @@ def create_app():
     app = Flask(__name__)
 
     # Load configuration
-    app.config.from_object(Config)  # ✅ Use Config class directly
+    app.config.from_object(Config)
 
     # Ensure upload directory exists
     ensure_upload_dir()
 
     # ===== CORS Setup =====
     CORS(
-        app, 
+        app,
         origins=Config.CORS_ORIGINS,
         supports_credentials=True,
         allow_headers=Config.CORS_ALLOW_HEADERS,
-        methods=Config.CORS_METHODS,  # ✅ includes PATCH
+        methods=Config.CORS_METHODS,
         expose_headers=Config.CORS_EXPOSE_HEADERS
     )
 
     # ===== Init Extensions =====
     db.init_app(app)
     migrate.init_app(app, db)
-    mail.init_app(app)  # ✅ Flask-Mail initialized correctly
+    mail.init_app(app)
     session.init_app(app)
 
     # ===== Import Models =====
@@ -52,7 +51,7 @@ def create_app():
     from routes.user import auth_bp
     from routes.Products import products_bp
     from routes.checkout import checkout_bp
-    from routes.notifications import notifications_bp  
+    from routes.notifications import notifications_bp
     from routes.admin_routes import admin_bp
     from routes.admin_seller_routes import admin_seller_bp
 
@@ -63,26 +62,8 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(admin_seller_bp, url_prefix="/admin_sellers")
 
-    # ===== After Request Handler =====
-    @app.after_request
-    def after_request(response):
-        """Add session cookie configuration"""
-        response.set_cookie(
-            app.config.get('SESSION_COOKIE_NAME', 'session'),
-            secure=app.config.get('SESSION_COOKIE_SECURE', False),
-            httponly=app.config.get('SESSION_COOKIE_HTTPONLY', True),
-            samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax'),
-            path=app.config.get('SESSION_COOKIE_PATH', '/'),
-            domain=app.config.get('SESSION_COOKIE_DOMAIN')
-        )
-        return response
-
-    # ===== Import Email Utility =====
-    from utils.email_utils import send_welcome_email
-
-    # Optional: Example usage (call after user registration)
-    # Note: In practice, call this inside your registration route, not here
-    # send_welcome_email(user.email, user.firstname)
+    # ✅ REMOVED the custom @app.after_request that was overriding
+    # Flask-Session’s cookie handling.
 
     return app
 
