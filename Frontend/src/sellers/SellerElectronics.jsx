@@ -26,7 +26,9 @@ const SellerElectronics = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, {
+        credentials: "include", // Include cookies for session authentication
+      });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
       let electronicsData = [];
@@ -81,6 +83,7 @@ const SellerElectronics = () => {
         const res = await fetch(`${API_URL}/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: "include", // Include cookies for session authentication
           body: JSON.stringify(productData),
         });
         if (!res.ok) throw new Error('Failed to update product');
@@ -90,6 +93,7 @@ const SellerElectronics = () => {
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: "include", // Include cookies for session authentication
           body: JSON.stringify(productData),
         });
         if (!res.ok) throw new Error('Failed to add product');
@@ -134,7 +138,10 @@ const SellerElectronics = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+        credentials: "include", // Include cookies for session authentication
+      });
       if (!res.ok) throw new Error('Failed to delete product');
       // Refresh product list
       fetchProducts();

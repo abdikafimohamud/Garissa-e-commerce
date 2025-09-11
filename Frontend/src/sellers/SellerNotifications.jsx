@@ -16,7 +16,9 @@ const BuyerNotifications = () => {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications`);
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
+        credentials: "include", // Include cookies for session authentication
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -41,16 +43,17 @@ const BuyerNotifications = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: "include", // Include cookies for session authentication
         body: JSON.stringify({ read: true })
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       // Update the local state
-      setNotifications(notifications.map(notif => 
-        notif.id === id ? {...notif, read: true} : notif
+      setNotifications(notifications.map(notif =>
+        notif.id === id ? { ...notif, read: true } : notif
       ));
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -85,7 +88,7 @@ const BuyerNotifications = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Sellers Notifications</h1>
-      
+
       {/* Filter Controls */}
       <div className="bg-white shadow-md rounded-lg p-4 mb-6">
         <div className="flex items-center">
@@ -112,7 +115,7 @@ const BuyerNotifications = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Notifications List */}
       <div>
         {filteredNotifications.length === 0 ? (
@@ -120,8 +123,8 @@ const BuyerNotifications = () => {
         ) : (
           <div className="space-y-4">
             {filteredNotifications.map(notification => (
-              <div 
-                key={notification.id} 
+              <div
+                key={notification.id}
                 className={`bg-white shadow-md rounded-lg p-4 ${!notification.read ? 'border-l-4 border-blue-500' : ''}`}
                 onClick={() => !notification.read && markAsRead(notification.id)}
               >

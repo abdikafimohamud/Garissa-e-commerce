@@ -26,18 +26,20 @@ const SellerSports = () => {
   const fetchSports = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_URL);
-      
+      const res = await fetch(API_URL, {
+        credentials: "include", // Include cookies for session authentication
+      });
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
       console.log("API Response:", data);
-      
+
       // Handle different response formats and filter for sports products
       let products = [];
-      
+
       if (Array.isArray(data)) {
         products = data;
       } else if (data && Array.isArray(data.products)) {
@@ -49,15 +51,15 @@ const SellerSports = () => {
       } else {
         throw new Error("Unexpected API response format");
       }
-      
+
       // Filter products to only include sports category
-      const sportsProducts = products.filter(product => 
+      const sportsProducts = products.filter(product =>
         product.category && product.category.toLowerCase() === "sports"
       );
-      
+
       setSports(sportsProducts);
       setError(null);
-      
+
     } catch (error) {
       console.error("Error fetching sports:", error);
       setError(error.message);
@@ -84,6 +86,7 @@ const SellerSports = () => {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include cookies for session authentication
         body: JSON.stringify(formData),
       });
 
@@ -108,7 +111,10 @@ const SellerSports = () => {
     if (!window.confirm("Delete this sports item?")) return;
 
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        credentials: "include", // Include cookies for session authentication
+      });
       if (res.ok) {
         setSports((prev) => prev.filter((item) => (item._id || item.id) !== id));
       } else {
@@ -146,8 +152,8 @@ const SellerSports = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <strong>Error: </strong>{error}
-          <button 
-            onClick={() => setError(null)} 
+          <button
+            onClick={() => setError(null)}
             className="ml-4 text-red-800 font-bold"
           >
             ×
