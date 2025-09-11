@@ -14,34 +14,20 @@ const Cosmetics = ({ addToCart }) => {
     { id: "haircare", name: "Haircare", icon: "💆‍♀️" },
   ];
 
-  // Fetch only cosmetics products from backend
+  // Fetch only cosmetics products from backend using the new public API
   useEffect(() => {
     const fetchCosmetics = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Always fetch all products and filter for cosmetics
-        const allRes = await fetch("http://127.0.0.1:5000/api/products");
-        if (!allRes.ok) throw new Error("Failed to fetch products");
-        const allData = await allRes.json();
-        
-        // Filter only cosmetics products
-        let cosmeticsData = [];
-        if (Array.isArray(allData)) {
-          cosmeticsData = allData.filter(p => 
-            p.category === 'cosmetics' || 
-            p.category === 'Cosmetics' ||
-            (p.subcategory && ['makeup', 'skincare', 'haircare'].includes(p.subcategory.toLowerCase()))
-          );
-        } else if (allData.products && Array.isArray(allData.products)) {
-          cosmeticsData = allData.products.filter(p => 
-            p.category === 'cosmetics' || 
-            p.category === 'Cosmetics' ||
-            (p.subcategory && ['makeup', 'skincare', 'haircare'].includes(p.subcategory.toLowerCase()))
-          );
-        }
-        
+
+        // Use the new public API endpoint with category filter
+        const res = await fetch("http://localhost:5000/api/products/public?category=cosmetics");
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+
+        // The public API returns products in a structured format
+        const cosmeticsData = data.products || [];
         setCosmetics(cosmeticsData);
       } catch (err) {
         setError(err.message || "Something went wrong");
@@ -57,13 +43,13 @@ const Cosmetics = ({ addToCart }) => {
   // Filtered products based on active category - ensure it's always an array
   const filteredProducts = React.useMemo(() => {
     if (!Array.isArray(cosmetics)) return [];
-    
+
     return activeCategory === "all"
       ? cosmetics
       : cosmetics.filter(
-          (p) => p.subcategory?.toLowerCase() === activeCategory.toLowerCase() || 
-                 p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
-        );
+        (p) => p.subcategory?.toLowerCase() === activeCategory.toLowerCase() ||
+          p.subCategory?.toLowerCase() === activeCategory.toLowerCase()
+      );
   }, [cosmetics, activeCategory]);
 
   if (loading) {
@@ -97,11 +83,10 @@ const Cosmetics = ({ addToCart }) => {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center px-4 py-2 rounded-full transition-all ${
-                activeCategory === cat.id
+              className={`flex items-center px-4 py-2 rounded-full transition-all ${activeCategory === cat.id
                   ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white shadow-md"
                   : "bg-red text-gray-700 hover:bg-red-100"
-              }`}
+                }`}
             >
               <span className="mr-2">{cat.icon}</span>
               {cat.name}

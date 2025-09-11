@@ -1,10 +1,10 @@
 // src/admin/DashboardHome.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaUsers, 
-  FaUserTie, 
-  FaShoppingCart, 
+import {
+  FaUsers,
+  FaUserTie,
+  FaShoppingCart,
   FaDollarSign,
   FaChartLine,
   FaBell,
@@ -13,84 +13,85 @@ import {
 } from 'react-icons/fa';
 
 export default function AdminHome() {
+  console.log("AdminHome: Component rendering");
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, []);
-  
+
   // Format the date and time
-  const formattedDate = currentTime.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const formattedDate = currentTime.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
-  const formattedTime = currentTime.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const formattedTime = currentTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
-  
+
   // Stats data
   const stats = [
-    { 
-      title: 'Total Sellers', 
-      value: '1,245', 
+    {
+      title: 'Total Sellers',
+      value: '1,245',
       icon: <FaUserTie className="text-blue-500 text-xl" />,
       change: '+12% from last month',
       color: 'bg-blue-100',
-      onClick: () => navigate('/admin/sellers')
+      onClick: () => navigate('/admin/dashboard/sellers')
     },
-    { 
-      title: 'Total Buyers', 
-      value: '5,678', 
+    {
+      title: 'Total Buyers',
+      value: '5,678',
       icon: <FaUsers className="text-green-500 text-xl" />,
       change: '+8% from last month',
       color: 'bg-green-100',
-      onClick: () => navigate('/admin/buyers')
+      onClick: () => navigate('/admin/dashboard/buyers')
     },
-    { 
-      title: 'Orders', 
-      value: '842', 
+    {
+      title: 'Orders',
+      value: '842',
       icon: <FaShoppingCart className="text-purple-500 text-xl" />,
       change: '+5% from yesterday',
       color: 'bg-purple-100',
-      onClick: () => navigate('/admin/orders')
+      onClick: () => navigate('/admin/dashboard/orders')
     },
-    { 
-      title: 'Revenue', 
-      value: '$45,230', 
+    {
+      title: 'Revenue',
+      value: '$45,230',
       icon: <FaDollarSign className="text-yellow-500 text-xl" />,
       change: '+15% from last month',
       color: 'bg-yellow-100',
-      onClick: () => navigate('/admin/earnings')
+      onClick: () => navigate('/admin/dashboard/earnings')
     }
   ];
-  
+
   // Quick actions with navigation
   const quickActions = [
-    { 
-      title: 'Analytics', 
-      icon: <FaChartLine className="text-xl" />, 
+    {
+      title: 'Analytics',
+      icon: <FaChartLine className="text-xl" />,
       color: 'bg-blue-500',
-      path: '/admin/analytics'
+      path: '/admin/dashboard/analytics'
     },
-    { 
-      title: 'Notifications', 
-      icon: <FaBell className="text-xl" />, 
+    {
+      title: 'Notifications',
+      icon: <FaBell className="text-xl" />,
       color: 'bg-red-500',
-      path: '/admin/notifications'
+      path: '/admin/dashboard/NotificationManagement'
     },
-    { 
-      title: 'Orders', 
-      icon: <FaCog className="text-xl" />, 
+    {
+      title: 'Orders',
+      icon: <FaCog className="text-xl" />,
       color: 'bg-gray-500',
-      path: '/admin/orders'
+      path: '/admin/dashboard/orders'
     },
   ];
 
@@ -109,21 +110,21 @@ export default function AdminHome() {
           </p>
         </div>
         <div className="mt-4 md:mt-0">
-          <button 
+          <button
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center"
-            onClick={() => navigate('/admin/Earnings')}
+            onClick={() => navigate('/admin/dashboard/earnings')}
           >
             <FaChartLine className="mr-2" />
             Generate Earnings
           </button>
         </div>
       </div>
-      
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
             onClick={stat.onClick}
           >
@@ -140,7 +141,7 @@ export default function AdminHome() {
           </div>
         ))}
       </div>
-      
+
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Quick Actions */}
@@ -161,7 +162,7 @@ export default function AdminHome() {
             </div>
           </div>
         </div>
-        
+
         {/* Right Column - Recent Activity and Summary */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -170,16 +171,16 @@ export default function AdminHome() {
               <p className="text-gray-500">Chart visualization would go here</p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
               <div className="space-y-4">
                 {[1, 2, 3].map((item) => (
-                  <div 
-                    key={item} 
+                  <div
+                    key={item}
                     className="flex justify-between items-center border-b border-gray-100 pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
-                    onClick={() => navigate('/admin/orders')}
+                    onClick={() => navigate('/admin/dashboard/orders')}
                   >
                     <div>
                       <p className="text-sm font-medium">Order #100{item}</p>
@@ -190,7 +191,7 @@ export default function AdminHome() {
                 ))}
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">System Status</h2>
               <div className="space-y-4">

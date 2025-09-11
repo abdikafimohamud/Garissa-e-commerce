@@ -1,46 +1,63 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models import User
 
 admin_seller_bp = Blueprint("admin_seller", __name__)
+
+def require_admin_auth():
+    """Check if user is authenticated and is an admin"""
+    user_id = session.get('user_id')
+    account_type = session.get('account_type')
+    is_admin = session.get('is_admin', False)
+    
+    if not user_id or account_type != 'admin' or not is_admin:
+        return False
+    return True
 
 # -------------------------
 # GET all sellers
 # -------------------------
 @admin_seller_bp.route("/sellers", methods=["GET"])
 def get_sellers():
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
-    search = request.args.get("search", "", type=str)
+    # Check admin authentication
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
+    
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 10, type=int)
+        search = request.args.get("search", "", type=str)
 
-    query = User.query.filter_by(account_type="seller")
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            (User.firstname.ilike(search_pattern)) |
-            (User.secondname.ilike(search_pattern)) |
-            (User.email.ilike(search_pattern)) |
-            (User.phone.ilike(search_pattern))
-        )
+        query = User.query.filter_by(account_type="seller")
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (User.firstname.ilike(search_pattern)) |
+                (User.secondname.ilike(search_pattern)) |
+                (User.email.ilike(search_pattern)) |
+                (User.phone.ilike(search_pattern))
+            )
 
-    sellers = query.paginate(page=page, per_page=per_page, error_out=False)
+        sellers = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
-        "sellers": [
-            {
-                "id": s.id,
-                "firstname": s.firstname,
-                "secondname": s.secondname,
-                "email": s.email,
-                "phone": s.phone,
-                "status": getattr(s, "status", "active"),
-            }
-            for s in sellers.items
-        ],
-        "total": sellers.total,
-        "pages": sellers.pages,
-        "current_page": sellers.page
-    }), 200
+        return jsonify({
+            "sellers": [
+                {
+                    "id": s.id,
+                    "firstname": s.firstname,
+                    "secondname": s.secondname,
+                    "email": s.email,
+                    "phone": s.phone,
+                    "status": getattr(s, "status", "active"),
+                }
+                for s in sellers.items
+            ],
+            "total": sellers.total,
+            "pages": sellers.pages,
+            "current_page": sellers.page
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 # -------------------------

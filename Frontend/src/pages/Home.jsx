@@ -36,9 +36,8 @@ const ProductCard = ({ product, addToCart }) => {
           {[...Array(5)].map((_, i) => (
             <FiStar
               key={i}
-              className={`text-sm ${
-                i < Math.floor(product.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-              }`}
+              className={`text-sm ${i < Math.floor(product.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                }`}
             />
           ))}
           <span className="text-xs text-gray-500 ml-1">({product.reviews})</span>
@@ -74,11 +73,11 @@ const CategorySection = ({ title, products, addToCart }) => {
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-semibold text-gray-700">{title}</h3>
         {products.length > 4 && (
-          <button 
+          <button
             onClick={() => setShowAll(!showAll)}
             className="flex items-center text-red-600 hover:text-red-700 font-medium"
           >
-            {showAll ? "Show Less" : "See More"} 
+            {showAll ? "Show Less" : "See More"}
             <FiChevronRight className="ml-1" />
           </button>
         )}
@@ -465,15 +464,15 @@ const Home = ({ addToCart }) => {
 
   const allProducts = [...clothes, ...electronics, ...cosmetics, ...sports];
 
-  const filteredProducts = 
-    activeCategory === "all" 
-      ? allProducts 
-      : activeCategory === "clothing" 
-        ? clothes 
-        : activeCategory === "electronics" 
-          ? electronics 
-          : activeCategory === "cosmetics" 
-            ? cosmetics 
+  const filteredProducts =
+    activeCategory === "all"
+      ? allProducts
+      : activeCategory === "clothing"
+        ? clothes
+        : activeCategory === "electronics"
+          ? electronics
+          : activeCategory === "cosmetics"
+            ? cosmetics
             : sports;
 
   return (
@@ -567,11 +566,10 @@ const Home = ({ addToCart }) => {
             <button
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
-              className={`px-6 py-2 rounded-full font-medium ${
-                activeCategory === category.id
+              className={`px-6 py-2 rounded-full font-medium ${activeCategory === category.id
                   ? "bg-gradient-to-r from-red-500 to-yellow-500 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
+                }`}
             >
               {category.name}
             </button>
@@ -592,304 +590,304 @@ const Home = ({ addToCart }) => {
       {/* Category Sections */}
       <section className="container mx-auto px-4 mb-16">
         <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Shop by Category</h2>
-        
+
         {/* Clothing */}
         <CategorySection title="Clothing" products={clothes} addToCart={addToCart} />
-        
+
         {/* Electronics */}
         <CategorySection title="Electronics" products={electronics} addToCart={addToCart} />
-        
+
         {/* Cosmetics */}
         <CategorySection title="Cosmetics" products={cosmetics} addToCart={addToCart} />
-        
+
         {/* Sports */}
         <CategorySection title="Sports & Fitness" products={sports} addToCart={addToCart} />
       </section>
 
-         <section class="py-16 bg-white">
-        <div class="container mx-auto px-4 max-w-6xl">
-          
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">How to Use Our Platform</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Our platform offers tailored experiences for both buyers and sellers with dedicated dashboards. Explore how each sidebar helps you navigate and manage your activities.</p>
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 max-w-6xl">
+
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">How to Use Our Platform</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">Our platform offers tailored experiences for both buyers and sellers with dedicated dashboards. Explore how each sidebar helps you navigate and manage your activities.</p>
+          </div>
+
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+            <div className="bg-blue-50 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-blue-100">
+              <div className="flex items-center mb-6">
+                <div className="bg-blue-100 p-3 rounded-full mr-4">
+                  <i className="fas fa-shopping-cart text-blue-600 text-2xl"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">For Buyers</h3>
+              </div>
+              <p className="text-gray-700 mb-6">The buyer sidebar provides easy access to shopping features, order tracking, and account management.</p>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-blue-600 font-bold block w-6 h-6 text-center">1</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Browse Products</h4>
+                    <p className="text-gray-600">Explore our catalog with advanced filtering options.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-blue-600 font-bold block w-6 h-6 text-center">2</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Manage Cart & Orders</h4>
+                    <p className="text-gray-600">Track your purchases and review order history.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-blue-600 font-bold block w-6 h-6 text-center">3</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Save Favorites</h4>
+                    <p className="text-gray-600">Create wishlists of products you love.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-blue-600 font-bold block w-6 h-6 text-center">4</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Account Settings</h4>
+                    <p className="text-gray-600">Update your profile and payment methods.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 text-white p-4 rounded-lg">
+                <h4 className="font-semibold mb-2 flex items-center">
+                  <i className="fas fa-info-circle mr-2"></i>
+                  Buyer Sidebar Overview
+                </h4>
+                <div className="flex flex-wrap items-center text-sm gap-4">
+                  <div className="flex items-center">
+                    <i className="fas fa-search mr-1 text-blue-300"></i>
+                    <span>Search</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-heart mr-1 text-blue-300"></i>
+                    <span>Wishlist</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-history mr-1 text-blue-300"></i>
+                    <span>Order History</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-cog mr-1 text-blue-300"></i>
+                    <span>Settings</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-           
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-               
-                <div class="bg-blue-50 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-blue-100">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-blue-100 p-3 rounded-full mr-4">
-                            <i class="fas fa-shopping-cart text-blue-600 text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-bold text-gray-900">For Buyers</h3>
-                    </div>
-                    <p class="text-gray-700 mb-6">The buyer sidebar provides easy access to shopping features, order tracking, and account management.</p>
-                    
-                    <div class="space-y-4 mb-8">
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-blue-600 font-bold block w-6 h-6 text-center">1</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Browse Products</h4>
-                                <p class="text-gray-600">Explore our catalog with advanced filtering options.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-blue-600 font-bold block w-6 h-6 text-center">2</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Manage Cart & Orders</h4>
-                                <p class="text-gray-600">Track your purchases and review order history.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-blue-600 font-bold block w-6 h-6 text-center">3</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Save Favorites</h4>
-                                <p class="text-gray-600">Create wishlists of products you love.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-blue-600 font-bold block w-6 h-6 text-center">4</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Account Settings</h4>
-                                <p class="text-gray-600">Update your profile and payment methods.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-800 text-white p-4 rounded-lg">
-                        <h4 class="font-semibold mb-2 flex items-center">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Buyer Sidebar Overview
-                        </h4>
-                        <div class="flex flex-wrap items-center text-sm gap-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-search mr-1 text-blue-300"></i>
-                                <span>Search</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-heart mr-1 text-blue-300"></i>
-                                <span>Wishlist</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-history mr-1 text-blue-300"></i>
-                                <span>Order History</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-cog mr-1 text-blue-300"></i>
-                                <span>Settings</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                
-                <div class="bg-purple-50 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-purple-100">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-purple-100 p-3 rounded-full mr-4">
-                            <i class="fas fa-store text-purple-600 text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-bold text-gray-900">For Sellers</h3>
-                    </div>
-                    <p class="text-gray-700 mb-6">The seller dashboard provides tools to manage your inventory, track sales, and grow your business.</p>
-                    
-                    <div class="space-y-4 mb-8">
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-purple-600 font-bold block w-6 h-6 text-center">1</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Product Management</h4>
-                                <p class="text-gray-600">Add, edit, and organize your product listings.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-purple-600 font-bold block w-6 h-6 text-center">2</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Order Fulfillment</h4>
-                                <p class="text-gray-600">Process orders and update shipping status.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-purple-600 font-bold block w-6 h-6 text-center">3</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Sales Analytics</h4>
-                                <p class="text-gray-600">View reports and track your business performance.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
-                                <span class="text-purple-600 font-bold block w-6 h-6 text-center">4</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">Store Customization</h4>
-                                <p class="text-gray-600">Personalize your storefront and branding.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-800 text-white p-4 rounded-lg">
-                        <h4 class="font-semibold mb-2 flex items-center">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Seller Sidebar Overview
-                        </h4>
-                        <div class="flex flex-wrap items-center text-sm gap-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-chart-line mr-1 text-purple-300"></i>
-                                <span>Dashboard</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-box mr-1 text-purple-300"></i>
-                                <span>Inventory</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-clipboard-list mr-1 text-purple-300"></i>
-                                <span>Orders</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-chart-pie mr-1 text-purple-300"></i>
-                                <span>Analytics</span>
-                            </div>
-                        </div>
-                    </div>
+            <div className="bg-purple-50 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-purple-100">
+              <div className="flex items-center mb-6">
+                <div className="bg-purple-100 p-3 rounded-full mr-4">
+                  <i className="fas fa-store text-purple-600 text-2xl"></i>
                 </div>
+                <h3 className="text-2xl font-bold text-gray-900">For Sellers</h3>
+              </div>
+              <p className="text-gray-700 mb-6">The seller dashboard provides tools to manage your inventory, track sales, and grow your business.</p>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-purple-600 font-bold block w-6 h-6 text-center">1</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Product Management</h4>
+                    <p className="text-gray-600">Add, edit, and organize your product listings.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-purple-600 font-bold block w-6 h-6 text-center">2</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Order Fulfillment</h4>
+                    <p className="text-gray-600">Process orders and update shipping status.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-purple-600 font-bold block w-6 h-6 text-center">3</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Sales Analytics</h4>
+                    <p className="text-gray-600">View reports and track your business performance.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-white rounded-full p-2 mr-4 mt-1 shadow-sm">
+                    <span className="text-purple-600 font-bold block w-6 h-6 text-center">4</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Store Customization</h4>
+                    <p className="text-gray-600">Personalize your storefront and branding.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 text-white p-4 rounded-lg">
+                <h4 className="font-semibold mb-2 flex items-center">
+                  <i className="fas fa-info-circle mr-2"></i>
+                  Seller Sidebar Overview
+                </h4>
+                <div className="flex flex-wrap items-center text-sm gap-4">
+                  <div className="flex items-center">
+                    <i className="fas fa-chart-line mr-1 text-purple-300"></i>
+                    <span>Dashboard</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-box mr-1 text-purple-300"></i>
+                    <span>Inventory</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-clipboard-list mr-1 text-purple-300"></i>
+                    <span>Orders</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-chart-pie mr-1 text-purple-300"></i>
+                    <span>Analytics</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <div className="mt-20">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">Connecting Content Across Our Platform</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">Our platform seamlessly connects buyer and seller experiences, creating a cohesive ecosystem for commerce.</p>
             </div>
 
-            
-            <div class="mt-20">
-                <div class="text-center mb-12">
-                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Connecting Content Across Our Platform</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">Our platform seamlessly connects buyer and seller experiences, creating a cohesive ecosystem for commerce.</p>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-lg p-8 border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">How Content Flows Between Buyers and Sellers</h3>
+                  <p className="text-gray-700 mb-6">Our platform creates a symbiotic relationship between buyers and sellers, with content and data flowing seamlessly between both experiences.</p>
+
+                  <div className="space-y-4">
+                    <div className="flex">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mr-4">
+                        <i className="fas fa-sync-alt text-blue-600"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Real-time Inventory Updates</h4>
+                        <p className="text-gray-600">Seller product changes instantly reflect in buyer search results.</p>
+                      </div>
+                    </div>
+                    <div className="flex">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mr-4">
+                        <i className="fas fa-bell text-purple-600"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Order Notifications</h4>
+                        <p className="text-gray-600">Buyer purchases immediately trigger seller notifications.</p>
+                      </div>
+                    </div>
+                    <div className="flex">
+                      <div className="bg-white rounded-lg p-3 shadow-sm mr-4">
+                        <i className="fas fa-comments text-blue-600"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Direct Messaging</h4>
+                        <p className="text-gray-600">Buyers and sellers can communicate directly through our secure messaging system.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-lg p-8 border border-gray-200">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-4">How Content Flows Between Buyers and Sellers</h3>
-                            <p class="text-gray-700 mb-6">Our platform creates a symbiotic relationship between buyers and sellers, with content and data flowing seamlessly between both experiences.</p>
-                            
-                            <div class="space-y-4">
-                                <div class="flex">
-                                    <div class="bg-white rounded-lg p-3 shadow-sm mr-4">
-                                        <i class="fas fa-sync-alt text-blue-600"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900">Real-time Inventory Updates</h4>
-                                        <p class="text-gray-600">Seller product changes instantly reflect in buyer search results.</p>
-                                    </div>
-                                </div>
-                                <div class="flex">
-                                    <div class="bg-white rounded-lg p-3 shadow-sm mr-4">
-                                        <i class="fas fa-bell text-purple-600"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900">Order Notifications</h4>
-                                        <p class="text-gray-600">Buyer purchases immediately trigger seller notifications.</p>
-                                    </div>
-                                </div>
-                                <div class="flex">
-                                    <div class="bg-white rounded-lg p-3 shadow-sm mr-4">
-                                        <i class="fas fa-comments text-blue-600"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900">Direct Messaging</h4>
-                                        <p class="text-gray-600">Buyers and sellers can communicate directly through our secure messaging system.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Integrated Dashboard Features</h3>
-                            <div class="bg-white rounded-xl p-6 shadow-sm mb-6">
-                                <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
-                                    <i class="fas fa-chart-line text-purple-600 mr-2"></i>
-                                    Shared Analytics
-                                </h4>
-                                <p class="text-gray-600">Sellers see what buyers are searching for, while buyers get personalized recommendations based on seller inventory.</p>
-                            </div>
-                            
-                            <div class="bg-white rounded-xl p-6 shadow-sm">
-                                <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
-                                    <i class="fas fa-shield-alt text-blue-600 mr-2"></i>
-                                    Unified Security
-                                </h4>
-                                <p class="text-gray-600">A single account system protects both buyer and seller data with bank-level encryption and two-factor authentication.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-10 pt-8 border-t border-gray-200">
-                        <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">Platform Integration Workflow</h3>
-                        <div class="flex flex-wrap justify-center gap-4">
-                            <div class="flex flex-col items-center">
-                                <div class="bg-white rounded-full p-3 shadow-md mb-2">
-                                    <i class="fas fa-search text-blue-600 text-xl"></i>
-                                </div>
-                                <p class="text-sm font-medium text-gray-700">Buyer Searches</p>
-                            </div>
-                            <div class="flex items-center justify-center">
-                                <i class="fas fa-arrow-right text-gray-400 mx-2"></i>
-                            </div>
-                            <div class="flex flex-col items-center">
-                                <div class="bg-white rounded-full p-3 shadow-md mb-2">
-                                    <i class="fas fa-database text-purple-600 text-xl"></i>
-                                </div>
-                                <p class="text-sm font-medium text-gray-700">Platform Matches</p>
-                            </div>
-                            <div class="flex items-center justify-center">
-                                <i class="fas fa-arrow-right text-gray-400 mx-2"></i>
-                            </div>
-                            <div class="flex flex-col items-center">
-                                <div class="bg-white rounded-full p-3 shadow-md mb-2">
-                                    <i class="fas fa-box-open text-blue-600 text-xl"></i>
-                                </div>
-                                <p class="text-sm font-medium text-gray-700">Seller Inventory</p>
-                            </div>
-                            <div class="flex items-center justify-center">
-                                <i class="fas fa-arrow-right text-gray-400 mx-2"></i>
-                            </div>
-                            <div class="flex flex-col items-center">
-                                <div class="bg-white rounded-full p-3 shadow-md mb-2">
-                                    <i class="fas fa-cart-plus text-purple-600 text-xl"></i>
-                                </div>
-                                <p class="text-sm font-medium text-gray-700">Purchase Made</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Integrated Dashboard Features</h3>
+                  <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <i className="fas fa-chart-line text-purple-600 mr-2"></i>
+                      Shared Analytics
+                    </h4>
+                    <p className="text-gray-600">Sellers see what buyers are searching for, while buyers get personalized recommendations based on seller inventory.</p>
+                  </div>
 
-           
-            <div class="text-center mt-16">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6">Ready to Get Started?</h3>
-                <p class="text-gray-600 mb-8 max-w-2xl mx-auto">Join thousands of buyers and sellers already using our platform to create meaningful connections and successful transactions.</p>
-                <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="Register" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg">
-                        <i class="fas fa-shopping-cart mr-2"></i>
-                        Create Buyer Account
-                    </a>
-                    <a href="Register" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg">
-                        <i class="fas fa-store mr-2"></i>
-                        Become a Seller
-                    </a>
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <i className="fas fa-shield-alt text-blue-600 mr-2"></i>
+                      Unified Security
+                    </h4>
+                    <p className="text-gray-600">A single account system protects both buyer and seller data with bank-level encryption and two-factor authentication.</p>
+                  </div>
                 </div>
-                <p class="text-gray-500 text-sm mt-6">Have questions? <a href="#" class="text-blue-600 hover:underline">Contact our support team</a></p>
+              </div>
+
+              <div className="mt-10 pt-8 border-t border-gray-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Platform Integration Workflow</h3>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white rounded-full p-3 shadow-md mb-2">
+                      <i className="fas fa-search text-blue-600 text-xl"></i>
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">Buyer Searches</p>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <i className="fas fa-arrow-right text-gray-400 mx-2"></i>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white rounded-full p-3 shadow-md mb-2">
+                      <i className="fas fa-database text-purple-600 text-xl"></i>
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">Platform Matches</p>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <i className="fas fa-arrow-right text-gray-400 mx-2"></i>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white rounded-full p-3 shadow-md mb-2">
+                      <i className="fas fa-box-open text-blue-600 text-xl"></i>
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">Seller Inventory</p>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <i className="fas fa-arrow-right text-gray-400 mx-2"></i>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white rounded-full p-3 shadow-md mb-2">
+                      <i className="fas fa-cart-plus text-purple-600 text-xl"></i>
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">Purchase Made</p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+
+          <div className="text-center mt-16">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Ready to Get Started?</h3>
+            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">Join thousands of buyers and sellers already using our platform to create meaningful connections and successful transactions.</p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <a href="Register" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg">
+                <i className="fas fa-shopping-cart mr-2"></i>
+                Create Buyer Account
+              </a>
+              <a href="Register" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg">
+                <i className="fas fa-store mr-2"></i>
+                Become a Seller
+              </a>
+            </div>
+            <p className="text-gray-500 text-sm mt-6">Have questions? <a href="#" className="text-blue-600 hover:underline">Contact our support team</a></p>
+          </div>
         </div>
-    </section>
+      </section>
       {/* Newsletter Section */}
       <section className="bg-gray-100 py-16">
         <div className="container mx-auto px-4 text-center">

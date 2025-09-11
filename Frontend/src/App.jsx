@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import { AuthProvider } from "./context/AuthContext";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -15,6 +16,7 @@ import Deals from "./pages/Deals";
 import Contact from "./pages/Contact";
 import BuyerLogin from "./pages/BuyerLogin";
 import SellerLogin from "./pages/SellerLogin";
+import AdminLogin from "./pages/AdminLogin";
 import Register from "./pages/Register";
 
 // Seller Dashboard Imports
@@ -42,6 +44,7 @@ import Cart from "./Dashboard/Cart";
 import Checkout from "./Dashboard/Checkout";
 import OrderDetails from "./Dashboard/OrderDetails";
 import Profilee from "./Dashboard/Profilee";
+import BuyerProfile from "./Dashboard/BuyerProfile";
 import Notifications from "./Dashboard/Notifications";
 
 // Admin Dashboard
@@ -49,6 +52,7 @@ import AdminDashboardLayout from "./admin/AdminDashboardLayout";
 import AdminHome from "./admin/AdminHome";
 import SellersManagement from "./admin/SellersManagement";
 import BuyersManagement from "./admin/BuyersManagement";
+import OrdersManagement from "./admin/OrdersManagement";
 import Analytics from "./admin/Analytics";
 import Earnings from "./admin/Earnings";
 import NotificationManagement from "./admin/NotificationManagement";
@@ -106,6 +110,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/buyer-login" element={<BuyerLogin />} />
           <Route path="/seller-login" element={<SellerLogin />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/header" element={<Header />} />
           <Route path="/register" element={<Register />} />
         </Route>
@@ -131,18 +136,19 @@ function App() {
             element={<Sports addToCart={addToCart} />}
           />
           <Route path="Profilee" element={<Profilee />} />
-          <Route 
-            path="cart" 
-            element={<Cart cartItems={cartItems} setCartItems={setCartItems} />} 
+          <Route path="profile" element={<BuyerProfile />} />
+          <Route
+            path="cart"
+            element={<Cart cartItems={cartItems} setCartItems={setCartItems} />}
           />
-          <Route 
-            path="checkout" 
-            element={<Checkout cartItems={cartItems} clearCart={clearCart} />} 
+          <Route
+            path="checkout"
+            element={<Checkout cartItems={cartItems} clearCart={clearCart} />}
           />
           <Route path="/Buyers/order-details" element={<OrderDetails />} />
           <Route path="Notifications" element={<Notifications />} />
         </Route>
-        
+
 
         {/* 🏬 Sellers dashboard */}
         <Route path="/seller" element={<SellerDashboardLayout />}>
@@ -160,11 +166,16 @@ function App() {
         </Route>
 
         {/* ===== Admin Routes ===== */}
-        <Route path="/admin" element={<AdminDashboardLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<AdminHome />} />
+        {/* Admin Login - Public Route */}
+        <Route path="/admin" element={<AdminLogin />} />
+
+        {/* Admin Dashboard - Protected Routes */}
+        <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboardLayout /></AdminProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard-home" replace />} />
+          <Route path="dashboard-home" element={<AdminHome />} />
           <Route path="sellers" element={<SellersManagement />} />
           <Route path="buyers" element={<BuyersManagement />} />
+          <Route path="orders" element={<OrdersManagement />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="earnings" element={<Earnings />} />
           <Route path="NotificationManagement" element={<NotificationManagement />} />

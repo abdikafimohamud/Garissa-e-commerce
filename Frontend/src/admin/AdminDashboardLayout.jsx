@@ -18,10 +18,9 @@ const AdminDashboardLayout = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const linkClasses = ({ isActive }) =>
-    `flex items-center p-3 rounded-lg transition-all duration-200 group ${
-      isActive
-        ? "bg-red-600 text-white"
-        : "hover:bg-red-500 hover:text-white text-gray-200"
+    `flex items-center p-3 rounded-lg transition-all duration-200 group ${isActive
+      ? "bg-red-600 text-white"
+      : "hover:bg-red-500 hover:text-white text-gray-200"
     }`;
 
   return (
@@ -63,50 +62,50 @@ const AdminDashboardLayout = () => {
 
           <nav className="space-y-3">
             <NavLink
-              to="/admin/Home"
+              to="/admin/dashboard/dashboard-home"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiHome className="mr-3" /> AdminHome
             </NavLink>
             <NavLink
-              to="/admin/sellers"
+              to="/admin/dashboard/sellers"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiUsers className="mr-3" /> Manage Sellers
             </NavLink>
             <NavLink
-              to="/admin/buyers"
+              to="/admin/dashboard/buyers"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiUsers className="mr-3" /> Manage Buyers
             </NavLink>
-            
+
             <NavLink
-              to="/admin/orders"
+              to="/admin/dashboard/orders"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiShoppingCart className="mr-3" /> Manage Orders
             </NavLink>
             <NavLink
-              to="/admin/analytics"
+              to="/admin/dashboard/analytics"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiBarChart2 className="mr-3" /> Analytics
             </NavLink>
             <NavLink
-              to="/admin/earnings"
+              to="/admin/dashboard/earnings"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >
               <FiDollarSign className="mr-3" /> Earnings
             </NavLink>
             <NavLink
-              to="/admin/NotificationManagement"
+              to="/admin/dashboard/NotificationManagement"
               className={linkClasses}
               onClick={() => setIsMobileSidebarOpen(false)}
             >

@@ -7,6 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  console.log("AuthProvider: Initializing with state:", { user: user ? "exists" : "null", isAuthenticated, loading });
+
   const API_URL = "http://localhost:5000";
 
   // 🔍 Check authentication status via Flask session
@@ -144,6 +146,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         fetchCurrentUser,
         checkAuthStatus,
+        setUser,
+        setIsAuthenticated,
       }}
     >
       {children}
@@ -152,4 +156,8 @@ export const AuthProvider = ({ children }) => {
 };
 
 // Custom hook
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  console.log("useAuth: Context value:", context ? "exists" : "undefined");
+  return context;
+};

@@ -23,19 +23,26 @@ const BuyersManagement = () => {
   const fetchBuyers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/admin/buyers");
+      const res = await fetch("http://localhost:5000/admin/buyers", {
+        credentials: "include", // Include cookies for session authentication
+      });
 
       if (res.ok) {
         const data = await res.json();
         setBuyers(data.buyers || data);
         setFilteredBuyers(data.buyers || data);
+        setError(""); // Clear any previous errors
       } else {
         const err = await res.json();
         setError(err.error || "Failed to fetch buyers");
+        setBuyers([]);
+        setFilteredBuyers([]);
       }
     } catch (err) {
       console.error("Error fetching buyers:", err);
       setError("Server error while fetching buyers");
+      setBuyers([]);
+      setFilteredBuyers([]);
     } finally {
       setLoading(false);
     }
@@ -51,6 +58,7 @@ const BuyersManagement = () => {
     try {
       const res = await fetch(`http://localhost:5000/admin/buyers/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (res.ok) {
@@ -73,6 +81,7 @@ const BuyersManagement = () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             status: currentStatus === "active" ? "suspended" : "active",
           }),
@@ -117,6 +126,7 @@ const BuyersManagement = () => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(editForm),
         }
       );
@@ -205,11 +215,10 @@ const BuyersManagement = () => {
               <td className="p-3">{buyer.phone || "N/A"}</td>
               <td className="p-3">
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    buyer.status === "active"
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${buyer.status === "active"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                  }`}
+                    }`}
                 >
                   {buyer.status || "active"}
                 </span>
@@ -229,11 +238,10 @@ const BuyersManagement = () => {
                 </button>
                 <button
                   onClick={() => toggleBuyerStatus(buyer.id, buyer.status)}
-                  className={`px-3 py-1 text-white rounded text-sm ${
-                    buyer.status === "active"
+                  className={`px-3 py-1 text-white rounded text-sm ${buyer.status === "active"
                       ? "bg-yellow-500 hover:bg-yellow-600"
                       : "bg-green-500 hover:bg-green-600"
-                  }`}
+                    }`}
                 >
                   {buyer.status === "active" ? "Suspend" : "Activate"}
                 </button>

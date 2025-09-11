@@ -197,6 +197,49 @@ def get_categories():
         return jsonify({"error": str(e)}), 500
 
 
+# ✅ NEW: Public endpoint for buyers to fetch all products
+@products_bp.route('/api/products/public', methods=['GET'])
+def get_public_products():
+    """
+    Public endpoint for buyers to fetch all products from all sellers.
+    No authentication required.
+    """
+    try:
+        # Get query parameters
+        category = request.args.get('category')
+        subcategory = request.args.get('subcategory')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        
+        # Build query - get all products from all sellers
+        query = Product.query
+        
+        # Filter by category if provided
+        if category:
+            query = query.filter(Product.category == category)
+            
+        # Filter by subcategory if provided
+        if subcategory:
+            query = query.filter(Product.subcategory == subcategory)
+        
+        # Order by creation date (newest first)
+        query = query.order_by(Product.created_at.desc())
+        
+        # Paginate results
+        products = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        return jsonify({
+            "products": [p.to_dict() for p in products.items],
+            "total": products.total,
+            "pages": products.pages,
+            "current_page": page,
+            "per_page": per_page
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @products_bp.route('/uploads/<filename>')
 def serve_image(filename):
     from flask import send_from_directory

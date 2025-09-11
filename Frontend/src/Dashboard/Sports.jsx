@@ -15,28 +15,14 @@ const Sports = ({ addToCart }) => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Always fetch all products and filter for sports
-        const allRes = await fetch("http://localhost:5000/api/products");
-        if (!allRes.ok) throw new Error("Failed to fetch products");
-        const allData = await allRes.json();
-        
-        // Filter only sports products
-        let sportsData = [];
-        if (Array.isArray(allData)) {
-          sportsData = allData.filter(p => 
-            p.category === 'sports' || 
-            p.category === 'Sports' ||
-            (p.subcategory && ['t-shirts', 'football', 'shoes'].includes(p.subcategory.toLowerCase()))
-          );
-        } else if (allData.products && Array.isArray(allData.products)) {
-          sportsData = allData.products.filter(p => 
-            p.category === 'sports' || 
-            p.category === 'Sports' ||
-            (p.subcategory && ['t-shirts', 'football', 'shoes'].includes(p.subcategory.toLowerCase()))
-          );
-        }
-        
+
+        // Use the new public API endpoint with category filter
+        const res = await fetch("http://localhost:5000/api/products/public?category=sports");
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+
+        // The public API returns products in a structured format
+        const sportsData = data.products || [];
         setSportsProducts(sportsData);
       } catch (err) {
         setError(err.message || "Something went wrong");
@@ -141,11 +127,10 @@ const Sports = ({ addToCart }) => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center px-4 py-2 rounded-full transition-colors ${
-                  activeCategory === category.id
+                className={`flex items-center px-4 py-2 rounded-full transition-colors ${activeCategory === category.id
                     ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white shadow-md"
                     : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
+                  }`}
               >
                 <span className="mr-2 text-lg">{category.icon}</span>
                 {category.name}
@@ -254,8 +239,8 @@ const Sports = ({ addToCart }) => {
                       product.isNew
                         ? "New"
                         : product.isBestSeller
-                        ? "Bestseller"
-                        : ""
+                          ? "Bestseller"
+                          : ""
                     }
                     className="h-[250px]"
                   />

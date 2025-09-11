@@ -8,13 +8,14 @@ const SellerCosmetics = () => {
     category: 'cosmetics',
     subcategory: 'makeup',
     brand: '',
-    imageUrl: '',
+    image: null,
     stock: '',
     rating: 0,
     isNew: false,
     isBestSeller: false,
     releaseDate: new Date().toISOString().split('T')[0]
   });
+  const [imagePreview, setImagePreview] = useState(null);
 
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -26,10 +27,12 @@ const SellerCosmetics = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, {
+          credentials: "include", // Include cookies for session authentication
+        });
         if (!response.ok) throw new Error('Failed to fetch products');
         const data = await response.json();
-        
+
         // Handle different response formats
         let cosmeticsProducts = [];
         if (Array.isArray(data)) {
@@ -37,7 +40,7 @@ const SellerCosmetics = () => {
         } else if (data.products && Array.isArray(data.products)) {
           cosmeticsProducts = data.products.filter(p => p.category === 'cosmetics');
         }
-        
+
         setProducts(cosmeticsProducts);
       } catch (error) {
         console.error('Error fetching products: ', error);
@@ -51,52 +54,77 @@ const SellerCosmetics = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+
+    if (type === "file") {
+      const file = e.target.files[0];
+      setFormData({
+        ...formData,
+        [name]: file,
+      });
+
+      // Create preview
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setImagePreview(null);
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === "checkbox" ? checked : value,
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const productData = {
-      ...formData,
-      price: parseFloat(formData.price),
-      stock: parseInt(formData.stock),
-      rating: parseFloat(formData.rating)
-    };
+
+    const productData = new FormData();
+    productData.append("name", formData.name);
+    productData.append("price", parseFloat(formData.price));
+    productData.append("description", formData.description);
+    productData.append("category", formData.category);
+    productData.append("subcategory", formData.subcategory);
+    productData.append("brand", formData.brand);
+    productData.append("stock", parseInt(formData.stock));
+    productData.append("rating", parseFloat(formData.rating));
+    productData.append("isNew", formData.isNew);
+    productData.append("isBestSeller", formData.isBestSeller);
+
+    if (formData.image) {
+      productData.append("image", formData.image);
+    }
 
     try {
       if (editingId) {
         const response = await fetch(`${API_URL}/${editingId}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(productData)
+          body: productData,
+          credentials: "include",
         });
-        
+
         if (!response.ok) throw new Error('Failed to update product');
-        
+
         const updatedProduct = await response.json();
-        setProducts(products.map(p => p.id === editingId ? updatedProduct : p));
+        setProducts(products.map(p => p.id === editingId ? updatedProduct.product : p));
         setEditingId(null);
       } else {
         const response = await fetch(API_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(productData)
+          body: productData,
+          credentials: "include",
         });
-        
+
         if (!response.ok) throw new Error('Failed to add product');
-        
+
         const newProduct = await response.json();
-        setProducts([...products, newProduct]);
+        setProducts([...products, newProduct.product]);
       }
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -105,13 +133,17 @@ const SellerCosmetics = () => {
         category: 'cosmetics',
         subcategory: 'makeup',
         brand: '',
-        imageUrl: '',
+        image: null,
         stock: '',
         rating: 0,
         isNew: false,
         isBestSeller: false,
         releaseDate: new Date().toISOString().split('T')[0]
       });
+      setImagePreview(null);
+
+      // Reset file input
+      document.getElementById("imageInput").value = "";
     } catch (error) {
       console.error('Error saving product: ', error);
       alert('Error saving product: ' + error.message);
@@ -132,11 +164,12 @@ const SellerCosmetics = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         const response = await fetch(`${API_URL}/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: "include",
         });
-        
+
         if (!response.ok) throw new Error('Failed to delete product');
-        
+
         setProducts(products.filter(p => (p.id || p._id) !== id));
       } catch (error) {
         console.error('Error deleting product: ', error);
@@ -150,6 +183,22 @@ const SellerCosmetics = () => {
     (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Function to get image URL from product object
+  const getProductImageUrl = (product) => {
+    // Check if the product has an image_filename (from backend)
+    if (product.image_filename) {
+      return `http://localhost:5000/uploads/${product.image_filename}`;
+    }
+
+    // Check if the product has an image_url (from backend)
+    if (product.image_url) {
+      return product.image_url;
+    }
+
+    // Fallback to other possible properties
+    return (product.images && product.images[0]) || "/default-image.jpg";
+  };
 
   if (loading) {
     return (
@@ -276,16 +325,31 @@ const SellerCosmetics = () => {
               </label>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-1">Image URL*</label>
+              <label className="block text-gray-700 mb-1">Product Image*</label>
               <input
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
+                id="imageInput"
+                type="file"
+                name="image"
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded"
+                accept="image/*"
                 required
               />
             </div>
+
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="md:col-span-2">
+                <label className="block text-gray-700 mb-2">
+                  Image Preview
+                </label>
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover border rounded"
+                />
+              </div>
+            )}
             <div className="md:col-span-2">
               <label className="block text-gray-700 mb-1">Description*</label>
               <textarea
@@ -311,13 +375,15 @@ const SellerCosmetics = () => {
                     category: 'cosmetics',
                     subcategory: 'makeup',
                     brand: '',
-                    imageUrl: '',
+                    image: null,
                     stock: '',
                     rating: 0,
                     isNew: false,
                     isBestSeller: false,
                     releaseDate: new Date().toISOString().split('T')[0]
                   });
+                  setImagePreview(null);
+                  document.getElementById("imageInput").value = "";
                 }}
                 className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
@@ -371,9 +437,9 @@ const SellerCosmetics = () => {
                 {filteredProducts.map((product) => (
                   <tr key={product.id || product._id} className="hover:bg-gray-50">
                     <td className="py-4 px-4">
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
+                      <img
+                        src={getProductImageUrl(product)}
+                        alt={product.name}
                         className="w-12 h-12 object-cover rounded"
                         onError={(e) => {
                           e.target.src = '/placeholder-product.jpg';

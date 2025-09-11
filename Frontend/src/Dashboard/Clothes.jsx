@@ -10,25 +10,18 @@ const Clothes = ({ addToCart }) => {
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch clothes from backend
+  // Fetch clothes from backend using the new public API
   useEffect(() => {
     const fetchClothes = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/products");
+        // Use the new public API endpoint with category filter
+        const res = await fetch("http://localhost:5000/api/products/public?category=clothes");
         if (!res.ok) throw new Error("Failed to fetch clothes");
         const data = await res.json();
-        
-        // Handle both response formats - with products array or direct array
-        const productsData = data.products || data;
-        
-        // Filter for clothing products only
-        const clothesProducts = Array.isArray(productsData) 
-          ? productsData.filter(product => 
-              product && product.category && product.category.toLowerCase() === "clothes"
-            )
-          : [];
-          
+
+        // The public API returns products in a structured format
+        const clothesProducts = data.products || [];
         setClothes(clothesProducts);
         setError(null);
       } catch (err) {
@@ -48,18 +41,18 @@ const Clothes = ({ addToCart }) => {
     useMemo(() => {
       // Ensure clothes is always treated as an array
       const safeClothes = Array.isArray(clothes) ? clothes : [];
-      
+
       return [
         safeClothes,
-        safeClothes.filter((p) => 
+        safeClothes.filter((p) =>
           p && p.subCategory && p.subCategory.toLowerCase() === "men"
         ),
-        safeClothes.filter((p) => 
+        safeClothes.filter((p) =>
           p && p.subCategory && p.subCategory.toLowerCase() === "women"
         ),
-        safeClothes.filter((p) => 
+        safeClothes.filter((p) =>
           p && p.subCategory && (
-            p.subCategory.toLowerCase() === "children" || 
+            p.subCategory.toLowerCase() === "children" ||
             p.subCategory.toLowerCase() === "kids"
           )
         ),
@@ -74,14 +67,14 @@ const Clothes = ({ addToCart }) => {
     if (activeCategory !== "all") {
       filtered = filtered.filter((p) => {
         if (!p) return false;
-        
+
         if (activeCategory === "men") {
           return p.subCategory && p.subCategory.toLowerCase() === "men";
         } else if (activeCategory === "women") {
           return p.subCategory && p.subCategory.toLowerCase() === "women";
         } else if (activeCategory === "children") {
           return p.subCategory && (
-            p.subCategory.toLowerCase() === "children" || 
+            p.subCategory.toLowerCase() === "children" ||
             p.subCategory.toLowerCase() === "kids"
           );
         }
@@ -163,11 +156,10 @@ const Clothes = ({ addToCart }) => {
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-4 py-2 rounded-full transition-colors ${
-              activeCategory === cat
+            className={`px-4 py-2 rounded-full transition-colors ${activeCategory === cat
                 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white"
                 : "bg-gray-200 hover:bg-gray-300"
-            }`}
+              }`}
             aria-pressed={activeCategory === cat}
             aria-label={`Show ${cat === "all" ? "all" : cat + "'s"} clothing`}
           >

@@ -46,7 +46,7 @@ def register_user():
             return jsonify({'error': 'Password must be at least 5 characters long'}), 400
 
         # Account type validation
-        if account_type not in ['buyer', 'seller']:
+        if account_type not in ['buyer', 'seller', 'admin']:
             return jsonify({'error': 'Invalid account type'}), 400
 
         # Check if email already exists
@@ -64,7 +64,8 @@ def register_user():
             email=email,
             password=hashed_password,
             phone=phone,
-            account_type=account_type
+            account_type=account_type,
+            is_admin=(account_type == 'admin')  # Set is_admin based on account type
         )
 
         db.session.add(new_user)
@@ -119,6 +120,7 @@ def login_buyer():
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
+        session['is_admin'] = user.is_admin  # Include admin status
         session['logged_in'] = True  # Add session flag
 
         return jsonify({
@@ -163,6 +165,7 @@ def login_seller():
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
+        session['is_admin'] = user.is_admin  # Include admin status
         session['logged_in'] = True
 
         return jsonify({
@@ -174,8 +177,46 @@ def login_seller():
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
+# =========================
+# ADMIN LOGIN ROUTE
+# =========================
+@auth_bp.route('/login/admin', methods=['POST'])
+def login_admin():
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', "").strip().lower()
+        password = data.get('password', "")
 
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
 
+        user = User.query.filter_by(email=email, account_type='admin').first()
+        if not user:
+            return jsonify({'error': 'Invalid email or not an admin account'}), 401
+
+        # Check password
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+        # Clear any previous session before starting a new one
+        session.clear()
+
+        # Create new session for admin
+        session['user_id'] = user.id
+        session['email'] = user.email
+        session['firstname'] = user.firstname
+        session['account_type'] = user.account_type
+        session['is_admin'] = user.is_admin
+        session['logged_in'] = True
+
+        return jsonify({
+            "message": "Admin login successful",
+            "user": user.to_dict(),
+            "redirect": "/admin/dashboard-home"
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

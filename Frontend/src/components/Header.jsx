@@ -15,7 +15,19 @@ import { useAuth } from "../context/AuthContext";
 const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, setUser, logout } = useAuth(); // added setUser for clearing context
+  const authContext = useAuth();
+
+  // Safety check for auth context
+  if (!authContext) {
+    console.error("Header: AuthContext is undefined. Make sure Header is wrapped in AuthProvider.");
+    return (
+      <header className="bg-gradient-to-r from-red-500 to-yellow-500 shadow-md py-4 px-6 flex justify-between items-center">
+        <div className="text-white">Loading...</div>
+      </header>
+    );
+  }
+
+  const { user, setUser, logout } = authContext;
 
   const handleLogout = async () => {
     try {
@@ -71,8 +83,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
             {userType === "seller"
               ? "Seller Dashboard"
               : userType === "admin"
-              ? "Admin Dashboard"
-              : "Dashboard"}
+                ? "Admin Dashboard"
+                : "Dashboard"}
           </h1>
         </div>
       </div>
@@ -137,8 +149,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
                   userType === "seller"
                     ? "/seller/profile-settings"
                     : userType === "admin"
-                    ? "/admin/profile"
-                    : "/Buyers/Profilee"
+                      ? "/admin/profile"
+                      : "/Buyers/Profilee"
                 }
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsUserDropdownOpen(false)}
@@ -152,8 +164,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
                   userType === "seller"
                     ? "/seller/profile-settings"
                     : userType === "admin"
-                    ? "/admin/settings"
-                    : "/Buyers/settings"
+                      ? "/admin/settings"
+                      : "/Buyers/settings"
                 }
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsUserDropdownOpen(false)}

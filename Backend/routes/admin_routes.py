@@ -1,46 +1,63 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models import User
 
 admin_bp = Blueprint("admin", __name__)
+
+def require_admin_auth():
+    """Check if user is authenticated and is an admin"""
+    user_id = session.get('user_id')
+    account_type = session.get('account_type')
+    is_admin = session.get('is_admin', False)
+    
+    if not user_id or account_type != 'admin' or not is_admin:
+        return False
+    return True
 
 # -------------------------
 # GET all buyers
 # -------------------------
 @admin_bp.route("/buyers", methods=["GET"])
 def get_buyers():
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
-    search = request.args.get("search", "", type=str)
+    # Check admin authentication
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
+    
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 10, type=int)
+        search = request.args.get("search", "", type=str)
 
-    query = User.query.filter_by(account_type="buyer")
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            (User.firstname.ilike(search_pattern)) |
-            (User.secondname.ilike(search_pattern)) |
-            (User.email.ilike(search_pattern)) |
-            (User.phone.ilike(search_pattern))
-        )
+        query = User.query.filter_by(account_type="buyer")
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (User.firstname.ilike(search_pattern)) |
+                (User.secondname.ilike(search_pattern)) |
+                (User.email.ilike(search_pattern)) |
+                (User.phone.ilike(search_pattern))
+            )
 
-    buyers = query.paginate(page=page, per_page=per_page, error_out=False)
+        buyers = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
-        "buyers": [
-            {
-                "id": b.id,
-                "firstname": b.firstname,
-                "secondname": b.secondname,
-                "email": b.email,
-                "phone": b.phone,
-                "status": getattr(b, "status", "active"),
-            }
-            for b in buyers.items
-        ],
-        "total": buyers.total,
-        "pages": buyers.pages,
-        "current_page": buyers.page
-    }), 200
+        return jsonify({
+            "buyers": [
+                {
+                    "id": b.id,
+                    "firstname": b.firstname,
+                    "secondname": b.secondname,
+                    "email": b.email,
+                    "phone": b.phone,
+                    "status": getattr(b, "status", "active"),
+                }
+                for b in buyers.items
+            ],
+            "total": buyers.total,
+            "pages": buyers.pages,
+            "current_page": buyers.page
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # -------------------------
 # GET a single buyer

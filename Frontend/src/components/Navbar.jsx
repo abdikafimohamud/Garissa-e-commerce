@@ -18,16 +18,16 @@ import {
 } from "react-icons/fa";
 import { GiClothes } from "react-icons/gi";
 
-const Navbar = ({ 
-  cartItems = [], 
-  isLoggedIn = false, 
-  userData = null, 
-  userType = "buyer", 
-  onLogout, 
-  onToggleMenu, 
-  onToggleUserDropdown, 
-  isMenuOpen = false, 
-  isUserDropdownOpen = false 
+const Navbar = ({
+  cartItems = [],
+  isLoggedIn = false,
+  userData = null,
+  userType = "buyer",
+  onLogout,
+  onToggleMenu,
+  onToggleUserDropdown,
+  isMenuOpen = false,
+  isUserDropdownOpen = false
 }) => {
   // Get user's display name with multiple fallbacks
   const getDisplayName = () => {
@@ -46,25 +46,25 @@ const Navbar = ({
               <FaBars className="text-xl" />
             </button>
           )}
-          
+
           <Link to="/" className="text-2xl font-extrabold flex items-center text-black drop-shadow-lg">
             <GiClothes className="mr-2" />
             <span>Garissa Store</span>
           </Link>
-          
+
           {/* Dashboard Title - only show when logged in */}
           {isLoggedIn && (
             <div className="ml-6 hidden md:block">
               <h1 className="text-lg font-semibold text-white">
-                {userType === "seller" ? "Seller Dashboard" : 
-                 userType === "admin" ? "Admin Dashboard" : "Dashboard"}
+                {userType === "seller" ? "Seller Dashboard" :
+                  userType === "admin" ? "Admin Dashboard" : "Dashboard"}
               </h1>
             </div>
           )}
         </div>
 
         {/* Mobile Menu Button */}
-        <button 
+        <button
           className="md:hidden text-black focus:outline-none"
           onClick={onToggleMenu}
         >
@@ -76,10 +76,10 @@ const Navbar = ({
         {/* Desktop Navigation */}
         <div className="hidden md:flex gap-6 items-center">
           {isLoggedIn ? (
-            <LoggedInNavLinks 
-              userData={userData} 
+            <LoggedInNavLinks
+              userData={userData}
               userType={userType}
-              cartItems={cartItems} 
+              cartItems={cartItems}
               isUserDropdownOpen={isUserDropdownOpen}
               onToggleUserDropdown={onToggleUserDropdown}
               onLogout={onLogout}
@@ -95,16 +95,16 @@ const Navbar = ({
           <div className="md:hidden absolute top-full left-0 right-0 bg-gradient-to-r from-red-500 to-yellow-500 p-4 shadow-lg z-50">
             <div className="flex flex-col gap-4">
               {isLoggedIn ? (
-                <MobileLoggedInNavLinks 
-                  userData={userData} 
+                <MobileLoggedInNavLinks
+                  userData={userData}
                   userType={userType}
-                  cartItems={cartItems} 
+                  cartItems={cartItems}
                   closeMenu={onToggleMenu}
                   onLogout={onLogout}
                   getDisplayName={getDisplayName}
                 />
               ) : (
-                <MobileLoggedOutNavLinks 
+                <MobileLoggedOutNavLinks
                   closeMenu={onToggleMenu}
                 />
               )}
@@ -158,6 +158,14 @@ const LoggedOutNavLinks = () => {
       >
         <FaPhone className="mr-1" />
         <span>Contact</span>
+      </Link>
+
+      <Link
+        to="/admin"
+        className="flex items-center hover:text-indigo-200 transition-colors"
+      >
+        <FaCog className="mr-1" />
+        <span>Admin</span>
       </Link>
 
       <Link
@@ -240,7 +248,7 @@ const LoggedInNavLinks = ({ userData, userType, cartItems, isUserDropdownOpen, o
 
       {/* User Dropdown */}
       <div className="relative">
-        <button 
+        <button
           className="flex items-center hover:text-indigo-200 transition-colors"
           onClick={onToggleUserDropdown}
         >
@@ -258,11 +266,11 @@ const LoggedInNavLinks = ({ userData, userType, cartItems, isUserDropdownOpen, o
                 {userData?.email || ""}
               </p>
             </div>
-            
+
             <Link
               to={
-                userType === "seller" ? "/seller/profile-settings" : 
-                userType === "admin" ? "/admin/profile" : "/Buyers/Profilee"
+                userType === "seller" ? "/seller/profile-settings" :
+                  userType === "admin" ? "/admin/profile" : "/Buyers/Profilee"
               }
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
               onClick={onToggleUserDropdown}
@@ -270,11 +278,11 @@ const LoggedInNavLinks = ({ userData, userType, cartItems, isUserDropdownOpen, o
               <FaUser className="mr-2" />
               Profile
             </Link>
-            
+
             <Link
               to={
-                userType === "seller" ? "/seller/profile-settings" : 
-                userType === "admin" ? "/admin/settings" : "/Buyers/settings"
+                userType === "seller" ? "/seller/profile-settings" :
+                  userType === "admin" ? "/admin/settings" : "/Buyers/settings"
               }
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
               onClick={onToggleUserDropdown}
@@ -282,7 +290,7 @@ const LoggedInNavLinks = ({ userData, userType, cartItems, isUserDropdownOpen, o
               <FaCog className="mr-2" />
               Settings
             </Link>
-            
+
             <button
               onClick={onLogout}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -353,6 +361,15 @@ const MobileLoggedOutNavLinks = ({ closeMenu }) => {
       >
         <FaPhone className="mr-2" />
         <span>Contact</span>
+      </Link>
+
+      <Link
+        to="/admin"
+        className="flex items-center hover:text-indigo-200 transition-colors py-2"
+        onClick={closeMenu}
+      >
+        <FaCog className="mr-2" />
+        <span>Admin Login</span>
       </Link>
 
       <div className="flex gap-4 pt-2 border-t border-white border-opacity-20">
@@ -448,8 +465,8 @@ const MobileLoggedInNavLinks = ({ userType, closeMenu, onLogout, getDisplayName 
 
       <Link
         to={
-          userType === "seller" ? "/seller/profile-settings" : 
-          userType === "admin" ? "/admin/profile" : "/Buyers/Profilee"
+          userType === "seller" ? "/seller/profile-settings" :
+            userType === "admin" ? "/admin/profile" : "/Buyers/Profilee"
         }
         className="flex items-center hover:text-indigo-200 transition-colors py-2"
         onClick={closeMenu}
@@ -460,8 +477,8 @@ const MobileLoggedInNavLinks = ({ userType, closeMenu, onLogout, getDisplayName 
 
       <Link
         to={
-          userType === "seller" ? "/seller/profile-settings" : 
-          userType === "admin" ? "/admin/settings" : "/Buyers/settings"
+          userType === "seller" ? "/seller/profile-settings" :
+            userType === "admin" ? "/admin/settings" : "/Buyers/settings"
         }
         className="flex items-center hover:text-indigo-200 transition-colors py-2"
         onClick={closeMenu}

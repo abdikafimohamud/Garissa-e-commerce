@@ -9,12 +9,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 // API base URL - adjust this to match your Flask backend URL
-const API_BASE_URL = "http://127.0.0.1:5000"; // Default Flask port
+const API_BASE_URL = "http://localhost:5000"; // Default Flask port
 
 const Checkout = ({ cartItems, clearCart }) => {
   const { user, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
-  
+
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -55,11 +55,11 @@ const Checkout = ({ cartItems, clearCart }) => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/buyer-login", { 
-        state: { 
+      navigate("/buyer-login", {
+        state: {
           message: "Please log in to complete your purchase",
           redirectTo: "/Buyers/checkout"
-        } 
+        }
       });
     }
   }, [isAuthenticated, navigate]);
@@ -93,7 +93,7 @@ const Checkout = ({ cartItems, clearCart }) => {
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       const response = await fetch(`${API_BASE_URL}/checkout`, {
         method: "POST",
         headers: {
@@ -102,19 +102,19 @@ const Checkout = ({ cartItems, clearCart }) => {
         credentials: "include", // Important for sending session cookies
         body: JSON.stringify(orderData),
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           // Session expired or not authenticated
           const errorData = await response.json();
           throw new Error(errorData.error || "Authentication failed");
         }
-        
+
         const errorText = await response.text();
         console.error("Server error response:", errorText);
         throw new Error(errorText || "Failed to create order");
       }
-      
+
       const result = await response.json();
       return result;
     } catch (error) {
@@ -127,12 +127,12 @@ const Checkout = ({ cartItems, clearCart }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (activeStep === 1) {
       setActiveStep(2);
       return;
     }
-    
+
     try {
       // Prepare order data for API
       const orderData = {
@@ -176,47 +176,47 @@ const Checkout = ({ cartItems, clearCart }) => {
           paypill_password: formData.paypillPassword
         })
       };
-      
+
       console.log("Submitting order:", orderData);
-      
+
       // Send order to backend
       const result = await createOrder(orderData);
       console.log("Order created successfully:", result);
-      
+
       setIsOrderPlaced(true);
       if (clearCart) clearCart();
-      
+
       // Redirect to orders page after a short delay
       setTimeout(() => {
-    navigate("/Buyers/order-details", { 
-    state: { 
-      order: {
-        id: result.order.order_number,
-        date: result.order.created_at,
-        status: result.order.status,
-        items: [...cartItems],
-        subtotal,
-        tax,
-        shipping,
-        total,
-        paymentMethod,
-        shippingInfo: orderData.shipping_info
-      }
-    } 
-  });
-    }, 2000);
+        navigate("/Buyers/order-details", {
+          state: {
+            order: {
+              id: result.order.order_number,
+              date: result.order.created_at,
+              status: result.order.status,
+              items: [...cartItems],
+              subtotal,
+              tax,
+              shipping,
+              total,
+              paymentMethod,
+              shippingInfo: orderData.shipping_info
+            }
+          }
+        });
+      }, 2000);
 
     } catch (error) {
       console.error("Order submission error:", error);
       setError(error.message);
-      
+
       // If authentication error, redirect to login
       if (error.message.includes("authentication") || error.message.includes("authenticated")) {
-        navigate("/Buyers/checkout", { 
-          state: { 
+        navigate("/Buyers/checkout", {
+          state: {
             message: "Please log in again to complete your order",
             redirectTo: "/Buyers/checkout"
-          } 
+          }
         });
       }
     }
@@ -252,7 +252,7 @@ const Checkout = ({ cartItems, clearCart }) => {
             to="/Buyers/clothes"
             className="inline-block bg-gradient-to-r from-green-500 to-yellow-500 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
           >
-          Continue Shopping
+            Continue Shopping
           </Link>
           <Link
             to="/Buyers/order-details"
@@ -272,13 +272,13 @@ const Checkout = ({ cartItems, clearCart }) => {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           <p>Error: {error}</p>
           <p className="text-sm mt-1">
-            {error.includes("authentication") 
-              ? "Please log in to complete your order." 
+            {error.includes("authentication")
+              ? "Please log in to complete your order."
               : "Make sure your Flask backend is running on " + API_BASE_URL}
           </p>
         </div>
       )}
-      
+
       {/* Checkout Progress */}
       <div className="flex items-center justify-between mb-8 relative">
         <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10"></div>
@@ -288,14 +288,12 @@ const Checkout = ({ cartItems, clearCart }) => {
         ></div>
 
         <div
-          className={`flex flex-col items-center ${
-            activeStep >= 1 ? "text-blue-600" : "text-gray-400"
-          }`}
+          className={`flex flex-col items-center ${activeStep >= 1 ? "text-blue-600" : "text-gray-400"
+            }`}
         >
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              activeStep >= 1 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white" : "bg-gray-200"
-            }`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep >= 1 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white" : "bg-gray-200"
+              }`}
           >
             1
           </div>
@@ -303,14 +301,12 @@ const Checkout = ({ cartItems, clearCart }) => {
         </div>
 
         <div
-          className={`flex flex-col items-center ${
-            activeStep >= 2 ? "bg-gradient-to-r from-green-500 to-yellow-500" : "text-gray-400"
-          }`}
+          className={`flex flex-col items-center ${activeStep >= 2 ? "bg-gradient-to-r from-green-500 to-yellow-500" : "text-gray-400"
+            }`}
         >
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              activeStep >= 2 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white" : "bg-gray-200"
-            }`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep >= 2 ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white" : "bg-gray-200"
+              }`}
           >
             2
           </div>
@@ -478,25 +474,25 @@ const Checkout = ({ cartItems, clearCart }) => {
 
               <div className="mb-6">
                 <label
-                    htmlFor="country"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Country *
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Kenya">Kenya</option>
-                    <option value="Somalia">Somalia</option>
-                    <option value="Uganda">Uganda</option>
-                    <option value="Tanzania">Tanzania</option>
-                    <option value="Ethiopia">Ethiopia</option>
-                  </select>
+                  htmlFor="country"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Country *
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Kenya">Kenya</option>
+                  <option value="Somalia">Somalia</option>
+                  <option value="Uganda">Uganda</option>
+                  <option value="Tanzania">Tanzania</option>
+                  <option value="Ethiopia">Ethiopia</option>
+                </select>
               </div>
 
               <div className="flex justify-between items-center mt-8">
@@ -534,11 +530,10 @@ const Checkout = ({ cartItems, clearCart }) => {
                   <button
                     type="button"
                     onClick={() => handlePaymentMethodChange("card")}
-                    className={`p-3 border rounded-lg text-center ${
-                      paymentMethod === "card"
+                    className={`p-3 border rounded-lg text-center ${paymentMethod === "card"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <div className="text-lg">💳</div>
                     <span className="text-sm">Credit/Debit Card</span>
@@ -546,11 +541,10 @@ const Checkout = ({ cartItems, clearCart }) => {
                   <button
                     type="button"
                     onClick={() => handlePaymentMethodChange("mpesa")}
-                    className={`p-3 border rounded-lg text-center ${
-                      paymentMethod === "mpesa"
+                    className={`p-3 border rounded-lg text-center ${paymentMethod === "mpesa"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <div className="text-lg">📱</div>
                     <span className="text-sm">M-Pesa</span>
@@ -558,11 +552,10 @@ const Checkout = ({ cartItems, clearCart }) => {
                   <button
                     type="button"
                     onClick={() => handlePaymentMethodChange("evc")}
-                    className={`p-3 border rounded-lg text-center ${
-                      paymentMethod === "evc"
+                    className={`p-3 border rounded-lg text-center ${paymentMethod === "evc"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <div className="text-lg">📞</div>
                     <span className="text-sm">EVC Plus</span>
@@ -570,11 +563,10 @@ const Checkout = ({ cartItems, clearCart }) => {
                   <button
                     type="button"
                     onClick={() => handlePaymentMethodChange("paypill")}
-                    className={`p-3 border rounded-lg text-center ${
-                      paymentMethod === "paypill"
+                    className={`p-3 border rounded-lg text-center ${paymentMethod === "paypill"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <div className="text-lg">💊</div>
                     <span className="text-sm">PayPill</span>
@@ -804,7 +796,7 @@ const Checkout = ({ cartItems, clearCart }) => {
                 >
                   <img
                     src={item.imageUrl || "/placeholder-product.jpg"}
-                    alt={item.name} 
+                    alt={item.name}
                     className="w-12 h-12 object-cover rounded mr-3"
                   />
                   <div className="flex-1">
