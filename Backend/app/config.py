@@ -12,18 +12,14 @@ class Config:
     CORS_ORIGINS = [
         "http://localhost:5173", 
         "http://127.0.0.1:5173",
-        "http://localhost:5174", 
-        "http://127.0.0.1:5174"
+        
     ]
     CORS_SUPPORTS_CREDENTIALS = True
     CORS_ALLOW_HEADERS = ["Content-Type", "Authorization", "Accept"]
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     CORS_EXPOSE_HEADERS = ["Content-Type", "Authorization"]
 
-    # Session
-    SESSION_TYPE = "filesystem"
-    SESSION_PERMANENT = True
-    SESSION_USE_SIGNER = True
+    # ✅ Session – using Flask’s built-in secure cookie session
     SESSION_COOKIE_NAME = "garissa_session"
     SESSION_COOKIE_SAMESITE = "Lax"    # good for localhost
     SESSION_COOKIE_SECURE = False      # True only on HTTPS

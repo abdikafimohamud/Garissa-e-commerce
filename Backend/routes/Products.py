@@ -16,11 +16,9 @@ MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 def save_image_file(file):
     if file and allowed_file(file.filename):
@@ -31,22 +29,26 @@ def save_image_file(file):
         return filename
     return None
 
-
 def delete_image_file(filename):
     if filename:
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         if os.path.exists(filepath):
             os.remove(filepath)
 
-
 @products_bp.route('/api/products', methods=['GET', 'POST'])
 def products():
     if request.method == 'GET':
         try:
+            # ✅ FIXED: Check authentication properly
+
             seller_id = session.get('user_id')
-            seller_role = session.get('account_type')  # ✅ fixed
-            if not seller_id or seller_role != "seller":  # ✅ stricter check
-                return jsonify({"error": "Unauthorized"}), 401
+            seller_role = session.get('account_type')
+            seller_status = session.get('status')
+            # Fetch user from DB to check status if not in session
+            from app.models import User
+            user = User.query.get(seller_id) if seller_id else None
+            if not seller_id or seller_role != "seller" or not user or user.status != 'active':
+                return jsonify({"error": "Unauthorized - Seller login required or account not active"}), 401
 
             category = request.args.get('category')
             page = int(request.args.get('page', 1))
@@ -69,10 +71,12 @@ def products():
     # ---------- POST ----------
     if request.method == 'POST':
         try:
+            # ✅ FIXED: Check authentication properly
             seller_id = session.get('user_id')
-            seller_role = session.get('account_type')  # ✅ fixed
-            if not seller_id or seller_role != "seller":  # ✅ stricter check
-                return jsonify({"error": "Unauthorized"}), 401
+            seller_role = session.get('account_type')
+            
+            if not seller_id or seller_role != "seller":
+                return jsonify({"error": "Unauthorized - Seller login required"}), 401
 
             if request.files:
                 image_file = request.files.get('image')
@@ -122,14 +126,16 @@ def products():
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
 
-
 @products_bp.route('/api/products/<int:product_id>', methods=['GET', 'PUT', 'DELETE'])
 def product_detail(product_id):
     try:
         product = Product.query.get_or_404(product_id)
 
-        # ✅ ensure logged-in seller owns this product
-        if session.get('account_type') != "seller" or session.get('user_id') != product.seller_id:  # ✅ fixed
+        # ✅ FIXED: Check authentication properly
+        seller_id = session.get('user_id')
+        seller_role = session.get('account_type')
+        
+        if seller_role != "seller" or seller_id != product.seller_id:
             return jsonify({"error": "Unauthorized"}), 401
 
         if request.method == 'GET':
@@ -184,7 +190,6 @@ def product_detail(product_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-
 @products_bp.route('/api/products/categories', methods=['GET'])
 def get_categories():
     try:
@@ -196,8 +201,7 @@ def get_categories():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# ✅ NEW: Public endpoint for buyers to fetch all products
+# ✅ Public endpoint for buyers to fetch all products
 @products_bp.route('/api/products/public', methods=['GET'])
 def get_public_products():
     """
@@ -238,7 +242,6 @@ def get_public_products():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @products_bp.route('/uploads/<filename>')
 def serve_image(filename):

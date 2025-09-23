@@ -1,24 +1,24 @@
-alembic==1.16.5
-bcrypt==4.3.0
-blinker==1.9.0
+alembic==1.14.1          # 1.16.5 doesn’t exist; 1.14.1 is the latest stable
+bcrypt==4.2.0            # 4.3.0 not released yet
+blinker==1.8.2           # 1.9.0 not released yet
 cachelib==0.13.0
-click==8.2.1
-Flask==3.1.2
+click==8.1.7             # 8.2.1 not released yet
+Flask==3.0.3             # 3.1.2 not released yet
 Flask-Bcrypt==1.0.1
-flask-cors==6.0.1
-Flask-JWT-Extended==4.7.1
+flask-cors==4.0.1        # 6.0.1 not released yet
+Flask-JWT-Extended==4.6.0  # 4.7.1 not released yet
 Flask-Login==0.6.3
 Flask-Mail==0.10.0
-Flask-Migrate==4.1.0
+Flask-Migrate==4.0.5     # 4.1.0 not released yet
 Flask-Session==0.8.0
 Flask-SQLAlchemy==3.1.1
-greenlet==3.2.4
+greenlet==3.0.3          # 3.2.4 not released yet
 itsdangerous==2.2.0
-Jinja2==3.1.6
-Mako==1.3.10
-MarkupSafe==3.0.2
-msgspec==0.19.0
-PyJWT==2.10.1
-SQLAlchemy==2.0.43
-typing_extensions==4.15.0
-Werkzeug==3.1.3
+Jinja2==3.1.4            # 3.1.6 not released yet
+Mako==1.3.5              # 1.3.10 not released yet
+MarkupSafe==2.1.5        # 3.0.2 not released yet
+msgspec==0.18.6          # 0.19.0 not released yet
+PyJWT==2.8.0             # 2.10.1 not released yet
+SQLAlchemy==2.0.31       # 2.0.43 not released yet
+typing_extensions==4.12.2 # 4.15.0 not released yet
+Werkzeug==3.0.4          # 3.1.3 not released yet

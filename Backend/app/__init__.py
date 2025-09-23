@@ -4,14 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_session import Session
 from app.config import Config
 
 # ===== Extensions =====
 db = SQLAlchemy()
 migrate = Migrate()
 mail = Mail()
-session = Session()
 
 # Ensure upload directory exists
 def ensure_upload_dir():
@@ -42,7 +40,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
-    session.init_app(app)
+    # ✅ No Flask-Session init—Flask’s secure cookie sessions are used.
 
     # ===== Import Models =====
     from app.models import User, Product, Order, OrderItem, Address, Payment, Notification
@@ -61,9 +59,6 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(admin_seller_bp, url_prefix="/admin_sellers")
-
-    # ✅ REMOVED the custom @app.after_request that was overriding
-    # Flask-Session’s cookie handling.
 
     return app
 

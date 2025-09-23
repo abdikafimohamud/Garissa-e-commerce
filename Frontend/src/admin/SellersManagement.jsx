@@ -13,7 +13,7 @@ const SellersManagement = () => {
   const fetchSellers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/admin_sellers/sellers", {
+      const res = await fetch("http://localhost:5000/admin/sellers", {
         credentials: "include",
       });
 
@@ -43,7 +43,7 @@ const SellersManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this seller?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/admin_sellers/sellers/${id}`, {
+      const res = await fetch(`http://localhost:5000/admin/sellers/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -64,7 +64,7 @@ const SellersManagement = () => {
   const toggleSellerStatus = async (id, currentStatus) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/admin_sellers/sellers/${id}/status`,
+        `http://localhost:5000/admin/sellers/${id}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

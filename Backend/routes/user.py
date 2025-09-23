@@ -1,4 +1,3 @@
-# routes/user.py
 from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models import User
@@ -77,12 +76,8 @@ def register_user():
         try:
             send_welcome_email(new_user.email, new_user.firstname)
         except Exception as email_error:
-            # Log email failure but don't block registration
             print(f"❌ Failed to send welcome email: {email_error}")
 
-        # =========================
-        # RESPONSE
-        # =========================
         return jsonify({
             "message": "User registered successfully.",
             "account_type": account_type,
@@ -94,9 +89,6 @@ def register_user():
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
 
-# =========================
-# BUYER LOGIN ROUTE
-# =========================
 @auth_bp.route('/login/buyer', methods=['POST'])
 def login_buyer():
     try:
@@ -111,17 +103,15 @@ def login_buyer():
         if not user:
             return jsonify({'error': 'Invalid email or not a buyer account'}), 401
 
-        # Check password using bcrypt
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
-        # Create session
         session['user_id'] = user.id
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
-        session['is_admin'] = user.is_admin  # Include admin status
-        session['logged_in'] = True  # Add session flag
+        session['is_admin'] = user.is_admin
+        session['logged_in'] = True
 
         return jsonify({
             "message": "Buyer login successful",
@@ -132,12 +122,7 @@ def login_buyer():
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
-# =========================
-# SELLER LOGIN ROUTE
-# =========================
-# =========================
-# SELLER LOGIN ROUTE
-# =========================
+
 @auth_bp.route('/login/seller', methods=['POST'])
 def login_seller():
     try:
@@ -148,24 +133,25 @@ def login_seller():
         if not email or not password:
             return jsonify({'error': 'Email and password are required'}), 400
 
+
         user = User.query.filter_by(email=email, account_type='seller').first()
         if not user:
             return jsonify({'error': 'Invalid email or not a seller account'}), 401
 
-        # Check password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
-        # ✅ Clear any previous session before starting a new one
-        session.clear()
+        # Check if seller is active
+        if user.status != 'active':
+            return jsonify({'error': 'Seller account is not active. Please contact admin.'}), 403
 
-        # ✅ Create new session with seller_id for product routes
+        session.clear()
         session['user_id'] = user.id
-        session['seller_id'] = user.id          # <-- add this line
+        session['seller_id'] = user.id
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
-        session['is_admin'] = user.is_admin  # Include admin status
+        session['is_admin'] = user.is_admin
         session['logged_in'] = True
 
         return jsonify({
@@ -177,9 +163,7 @@ def login_seller():
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
-# =========================
-# ADMIN LOGIN ROUTE
-# =========================
+
 @auth_bp.route('/login/admin', methods=['POST'])
 def login_admin():
     try:
@@ -194,20 +178,18 @@ def login_admin():
         if not user:
             return jsonify({'error': 'Invalid email or not an admin account'}), 401
 
-        # Check password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return jsonify({'error': 'Invalid email or password'}), 401
 
-        # Clear any previous session before starting a new one
-        session.clear()
 
-        # Create new session for admin
+        session.clear()
         session['user_id'] = user.id
         session['email'] = user.email
         session['firstname'] = user.firstname
         session['account_type'] = user.account_type
-        session['is_admin'] = user.is_admin
+        session['is_admin'] = True  # Force True for admin
         session['logged_in'] = True
+        session['status'] = user.status if hasattr(user, 'status') else 'active'
 
         return jsonify({
             "message": "Admin login successful",
@@ -218,51 +200,46 @@ def login_admin():
     except Exception as e:
         return jsonify({'error': f"Internal server error: {str(e)}"}), 500
 
+
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     try:
-        # Clear session
         session.clear()
         return jsonify({"message": "Logged out successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @auth_bp.route('/profile', methods=['GET'])
 def get_profile():
     try:
-        # Check if user is logged in
         if not session.get('user_id'):
             return jsonify({"error": "Not authenticated"}), 401
-        
+
         user_id = session['user_id']
         user = User.query.get(user_id)
-        
         if not user:
             return jsonify({"error": "User not found"}), 404
-        
-        return jsonify({
-            "user": user.to_dict()
-        }), 200
-        
+
+        return jsonify({"user": user.to_dict()}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @auth_bp.route('/profile', methods=['PUT', 'PATCH'])
 def update_profile():
     try:
-        # Check if user is logged in
         if not session.get('user_id'):
             return jsonify({"error": "Not authenticated"}), 401
-        
+
         user_id = session['user_id']
         user = User.query.get(user_id)
-        
         if not user:
             return jsonify({"error": "User not found"}), 404
-        
+
         data = request.get_json()
-        
-        # Update fields if provided
+
         if 'firstname' in data:
             user.firstname = data['firstname']
         if 'secondname' in data:
@@ -273,63 +250,53 @@ def update_profile():
             user.profile_pic = data['profile_pic']
         if 'account_type' in data:
             user.account_type = data['account_type']
-        
-        # Email update requires validation and uniqueness check
+
         if 'email' in data:
             if not is_valid_email(data['email']):
                 return jsonify({"error": "Invalid email format"}), 400
-            
-            # Check if email is already taken by another user
             existing_user = User.query.filter(User.email == data['email'], User.id != user_id).first()
             if existing_user:
                 return jsonify({"error": 'Email already taken'}), 409
-            
             user.email = data['email']
-        
-        # Password update
+
         if 'password' in data:
             if len(data['password']) < 6:
                 return jsonify({"error": "Password must be at least 6 characters"}), 400
             user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
+
         db.session.commit()
-        
+
         return jsonify({
             "message": "Profile updated successfully",
             "user": user.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
 @auth_bp.route('/profile', methods=['DELETE'])
 def delete_profile():
     try:
-        # Check if user is logged in
         if not session.get('user_id'):
             return jsonify({"error": "Not authenticated"}), 401
-        
+
         user_id = session['user_id']
         user = User.query.get(user_id)
-        
         if not user:
             return jsonify({"error": "User not found"}), 404
-        
-        # Clear session first
+
         session.clear()
-        
-        # Delete user
         db.session.delete(user)
         db.session.commit()
-        
-        return jsonify({
-            "message": "Account deleted successfully"
-        }), 200
-        
+
+        return jsonify({"message": "Account deleted successfully"}), 200
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
 
 @auth_bp.route('/check-auth', methods=['GET'])
 def check_auth():
@@ -337,119 +304,107 @@ def check_auth():
         if session.get('user_id'):
             user_id = session['user_id']
             user = User.query.get(user_id)
-            
             if user:
                 return jsonify({
                     "authenticated": True,
                     "user": user.to_dict()
                 }), 200
-        
-        return jsonify({
-            "authenticated": False
-        }), 200
-        
+
+        return jsonify({"authenticated": False}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @auth_bp.route('/get_current_user', methods=['GET'])
 def get_current_user():
-    """
-    Get the currently authenticated user's information
-    This is similar to check_auth but returns a simpler response
-    """
     try:
         if not session.get('user_id'):
             return jsonify({"error": "Not authenticated"}), 401
-        
+
         user_id = session['user_id']
         user = User.query.get(user_id)
-        
         if not user:
             return jsonify({"error": "User not found"}), 404
-        
-        return jsonify({
-            "user": user.to_dict()
-        }), 200
-        
+
+        return jsonify({"user": user.to_dict()}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
 
 
 @auth_bp.route('/admin/sellers', methods=['GET'])
 def get_all_sellers():
     try:
-        # Check if user is admin
         if not session.get('is_admin'):
             return jsonify({"error": "Admin access required"}), 403
-        
+
         sellers = User.query.filter_by(account_type='seller').all()
         return jsonify({
             "sellers": [seller.to_dict() for seller in sellers]
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 
 @auth_bp.route('/admin/sellers/<int:seller_id>', methods=['DELETE'])
 def delete_seller(seller_id):
     try:
         if not session.get('is_admin'):
             return jsonify({"error": "Admin access required"}), 403
-        
+
         seller = User.query.filter_by(id=seller_id, account_type='seller').first()
         if not seller:
             return jsonify({"error": "Seller not found"}), 404
-        
+
         db.session.delete(seller)
         db.session.commit()
-        
+
         return jsonify({"message": "Seller deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
+
+
 @auth_bp.route('/admin/sellers/<int:seller_id>/status', methods=['PATCH'])
 def update_seller_status(seller_id):
     try:
         if not session.get('is_admin'):
             return jsonify({"error": "Admin access required"}), 403
-        
+
         seller = User.query.filter_by(id=seller_id, account_type='seller').first()
         if not seller:
             return jsonify({"error": "Seller not found"}), 404
-        
+
         data = request.get_json()
         new_status = data.get('status')
-        
+
         if new_status not in ['active', 'suspended']:
             return jsonify({"error": "Invalid status"}), 400
-        
+
         seller.status = new_status
         db.session.commit()
-        
+
         return jsonify({"message": f"Seller status updated to {new_status}"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
 
 @auth_bp.route('/admin/sellers/<int:seller_id>/approve', methods=['PATCH'])
 def approve_seller(seller_id):
     try:
         if not session.get('is_admin'):
             return jsonify({"error": "Admin access required"}), 403
-        
+
         seller = User.query.filter_by(id=seller_id, account_type='seller').first()
         if not seller:
             return jsonify({"error": "Seller not found"}), 404
-        
+
         seller.status = 'active'
         db.session.commit()
-        
+
         return jsonify({"message": "Seller approved successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
-
