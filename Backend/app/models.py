@@ -165,6 +165,9 @@ class OrderItem(db.Model):
     color = db.Column(db.String(20))
     size = db.Column(db.String(10))
     
+    # Add relationship to Product
+    product = db.relationship('Product', backref='order_items')
+
     def to_dict(self):
         return {
             "id": self.id,

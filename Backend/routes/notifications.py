@@ -6,7 +6,11 @@ from app import db
 from app.models import Notification, User
 
 notifications_bp = Blueprint("notifications_bp", __name__)
-CORS(notifications_bp)  # Enable CORS for this blueprint
+CORS(
+    notifications_bp,
+    supports_credentials=True,
+    origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+)
 
 # ===============================
 # GET ALL USERS
