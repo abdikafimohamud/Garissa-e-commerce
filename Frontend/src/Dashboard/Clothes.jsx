@@ -60,7 +60,6 @@ const Clothes = ({ addToCart }) => {
   // Memoized filters for better performance
   const [allClothes, menClothes, womenClothes, childrenClothes] =
     useMemo(() => {
-      // Ensure clothes is always treated as an array
       const safeClothes = Array.isArray(clothes) ? clothes : [];
 
       return [
@@ -88,7 +87,6 @@ const Clothes = ({ addToCart }) => {
   const filteredProducts = useMemo(() => {
     let filtered = [...allClothes];
 
-    // Category filter
     if (activeCategory !== "all") {
       filtered = filtered.filter((p) => {
         if (!p) return false;
@@ -108,14 +106,12 @@ const Clothes = ({ addToCart }) => {
       });
     }
 
-    // Brand filter
     if (selectedBrands.length > 0) {
       filtered = filtered.filter(
         (p) => p && p.brand && selectedBrands.includes(p.brand.trim())
       );
     }
 
-    // Sort products
     return filtered.sort((a, b) => {
       switch (sortOption) {
         case "price-low":
@@ -130,7 +126,6 @@ const Clothes = ({ addToCart }) => {
             new Date(a.createdAt || a.releaseDate || 0)
           );
         default:
-          // Featured - show new and bestseller items first
           if (a.isNew && !b.isNew) return -1;
           if (!a.isNew && b.isNew) return 1;
           if (a.isBestSeller && !b.isBestSeller) return -1;
@@ -153,7 +148,6 @@ const Clothes = ({ addToCart }) => {
     { id: "children", name: "Children's Wear", icon: "👶" },
   ];
 
-  // Show loading state
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen">
@@ -171,7 +165,6 @@ const Clothes = ({ addToCart }) => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className="bg-gray-50 min-h-screen">
@@ -250,45 +243,44 @@ const Clothes = ({ addToCart }) => {
           </div>
         </div>
 
-        <div className="flex md:flex-row gap-0 mb-8">
-          {/* Filters Sidebar */}
-          <div className="hidden md:block w-64 space-y-6">
-            {brands.length > 0 && (
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-medium mb-4">Brands</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {brands.map((brand) => (
-                    <label
-                      key={brand}
-                      className="flex items-center cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={() =>
-                          setSelectedBrands((prev) =>
-                            prev.includes(brand)
-                              ? prev.filter((b) => b !== brand)
-                              : [...prev, brand]
-                          )
-                        }
-                        className="checkbox checkbox-primary checkbox-sm mr-3"
-                      />
-                      <span className="text-sm capitalize">{brand}</span>
-                    </label>
-                  ))}
-                </div>
-                {selectedBrands.length > 0 && (
-                  <button
-                    onClick={() => setSelectedBrands([])}
-                    className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+        {/* Sidebar + Products (Cosmetics style) */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* Brand Filter Sidebar */}
+          {brands.length > 0 && (
+            <div className="bg-white p-6 rounded-xl shadow-sm hidden md:block w-64">
+              <h3 className="font-medium mb-4">Brands</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {brands.map((brand) => (
+                  <label
+                    key={brand}
+                    className="flex items-center cursor-pointer"
                   >
-                    Clear brands
-                  </button>
-                )}
+                    <input
+                      type="checkbox"
+                      checked={selectedBrands.includes(brand)}
+                      onChange={() =>
+                        setSelectedBrands((prev) =>
+                          prev.includes(brand)
+                            ? prev.filter((b) => b !== brand)
+                            : [...prev, brand]
+                        )
+                      }
+                      className="checkbox checkbox-primary checkbox-sm mr-3"
+                    />
+                    <span className="text-sm capitalize">{brand}</span>
+                  </label>
+                ))}
               </div>
-            )}
-          </div>
+              {selectedBrands.length > 0 && (
+                <button
+                  onClick={() => setSelectedBrands([])}
+                  className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear brands
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Products Grid */}
           <div className="flex-1">
@@ -300,7 +292,6 @@ const Clothes = ({ addToCart }) => {
                     ({filteredProducts.length} products)
                   </span>
                 </h2>
-                {/* Product Count */}
                 <div className="text-gray-600 mt-1">
                   Showing {filteredProducts.length} item
                   {filteredProducts.length !== 1 ? "s" : ""}
@@ -322,7 +313,6 @@ const Clothes = ({ addToCart }) => {
 
             {filteredProducts.length > 0 ? (
               <>
-                {/* Main Product Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredProducts.map((product) => (
                     <Products
@@ -341,7 +331,6 @@ const Clothes = ({ addToCart }) => {
                   ))}
                 </div>
 
-                {/* Category Collections (when viewing 'all') */}
                 {hasCollections && activeCategory === "all" && (
                   <div className="space-y-12 mt-12">
                     {menClothes.length > 0 && (

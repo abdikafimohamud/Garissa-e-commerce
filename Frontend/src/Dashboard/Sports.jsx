@@ -17,7 +17,9 @@ const Sports = ({ addToCart }) => {
         setLoading(true);
         setError(null);
 
-        const res = await fetch("http://localhost:5000/api/products/public?category=sports");
+        const res = await fetch(
+          "http://localhost:5000/api/products/public?category=sports"
+        );
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
 
@@ -43,9 +45,17 @@ const Sports = ({ addToCart }) => {
     if (!subCategory) return null;
     const normalized = subCategory.trim().toLowerCase();
 
-    if (normalized.includes("t-shirt") || normalized.includes("shirt") || normalized.includes("tshirt"))
+    if (
+      normalized.includes("t-shirt") ||
+      normalized.includes("shirt") ||
+      normalized.includes("tshirt")
+    )
       return "t-shirt";
-    if (normalized.includes("shoes") || normalized.includes("sneaker") || normalized.includes("footwear"))
+    if (
+      normalized.includes("shoes") ||
+      normalized.includes("sneaker") ||
+      normalized.includes("footwear")
+    )
       return "shoes";
     if (normalized.includes("football") || normalized.includes("soccer"))
       return "football";
@@ -102,7 +112,9 @@ const Sports = ({ addToCart }) => {
           <h1 className="text-4xl font-bold mb-4">Premium Sports Gear</h1>
         </div>
         <div className="flex items-center justify-center h-64">
-          <p className="text-lg font-semibold text-gray-600">Loading sports products...</p>
+          <p className="text-lg font-semibold text-gray-600">
+            Loading sports products...
+          </p>
         </div>
       </div>
     );
@@ -117,7 +129,7 @@ const Sports = ({ addToCart }) => {
         <div className="flex flex-col items-center justify-center h-64">
           <p className="text-lg font-semibold text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => setRefreshTrigger(prev => prev + 1)}
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
             className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
           >
             Retry
@@ -143,11 +155,22 @@ const Sports = ({ addToCart }) => {
         {/* Refresh Button */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => setRefreshTrigger(prev => prev + 1)}
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
             className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors flex items-center"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
             Refresh Products
           </button>
@@ -160,10 +183,11 @@ const Sports = ({ addToCart }) => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center px-4 py-2 rounded-full transition-colors ${activeCategory === category.id
+                className={`flex items-center px-4 py-2 rounded-full transition-colors ${
+                  activeCategory === category.id
                     ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white shadow-md"
                     : "bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
+                }`}
               >
                 <span className="mr-2 text-lg">{category.icon}</span>
                 {category.name}
@@ -172,83 +196,43 @@ const Sports = ({ addToCart }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          {/* Filters Sidebar */}
-          <div className="w-full md:w-72 space-y-6">
-            {/* Price Filter */}
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h3 className="font-medium mb-4">Price Range</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between mb-2">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="5000"
-                  step="100"
-                  value={priceRange[0]}
-                  onChange={(e) =>
-                    setPriceRange([parseInt(e.target.value), priceRange[1]])
-                  }
-                  className="w-full range range-primary range-sm"
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max="5000"
-                  step="100"
-                  value={priceRange[1]}
-                  onChange={(e) =>
-                    setPriceRange([priceRange[0], parseInt(e.target.value)])
-                  }
-                  className="w-full range range-primary range-sm"
-                />
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Min: ${priceRange[0]}</span>
-                  <span>Max: ${priceRange[1]}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Brand Filter */}
-            {brands.length > 0 && (
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-medium mb-4">Brands</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {brands.map((brand) => (
-                    <label
-                      key={brand}
-                      className="flex items-center cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={() =>
-                          setSelectedBrands((prev) =>
-                            prev.includes(brand)
-                              ? prev.filter((b) => b !== brand)
-                              : [...prev, brand]
-                          )
-                        }
-                        className="checkbox checkbox-primary checkbox-sm mr-3"
-                      />
-                      <span className="text-sm capitalize">{brand}</span>
-                    </label>
-                  ))}
-                </div>
-                {selectedBrands.length > 0 && (
-                  <button
-                    onClick={() => setSelectedBrands([])}
-                    className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* Brand Filter Sidebar */}
+          {brands.length > 0 && (
+            <div className="bg-white p-6 rounded-xl shadow-sm hidden md:block w-64">
+              <h3 className="font-medium mb-4">Brands</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {brands.map((brand) => (
+                  <label
+                    key={brand}
+                    className="flex items-center cursor-pointer"
                   >
-                    Clear brands
-                  </button>
-                )}
+                    <input
+                      type="checkbox"
+                      checked={selectedBrands.includes(brand)}
+                      onChange={() =>
+                        setSelectedBrands((prev) =>
+                          prev.includes(brand)
+                            ? prev.filter((b) => b !== brand)
+                            : [...prev, brand]
+                        )
+                      }
+                      className="checkbox checkbox-primary checkbox-sm mr-3"
+                    />
+                    <span className="text-sm capitalize">{brand}</span>
+                  </label>
+                ))}
               </div>
-            )}
-          </div>
+              {selectedBrands.length > 0 && (
+                <button
+                  onClick={() => setSelectedBrands([])}
+                  className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear brands
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Products Grid */}
           <div className="flex-1">
@@ -291,8 +275,8 @@ const Sports = ({ addToCart }) => {
                       product.isNew
                         ? "New"
                         : product.isBestSeller
-                          ? "Bestseller"
-                          : ""
+                        ? "Bestseller"
+                        : ""
                     }
                     className="h-[250px]"
                   />
@@ -302,13 +286,14 @@ const Sports = ({ addToCart }) => {
               <div className="text-center py-16 bg-white rounded-xl shadow-sm">
                 <div className="text-6xl mb-4">🏃‍♂️</div>
                 <h3 className="text-xl font-medium text-gray-700 mb-2">
-                  {sportsProducts.length === 0 ? "No sports products available." : "No products match your filters."}
+                  {sportsProducts.length === 0
+                    ? "No sports products available."
+                    : "No products match your filters."}
                 </h3>
                 <p className="text-gray-500 mb-4">
-                  {sportsProducts.length === 0 
-                    ? "Check back later for new arrivals." 
-                    : "Try adjusting your filters or browse other categories."
-                  }
+                  {sportsProducts.length === 0
+                    ? "Check back later for new arrivals."
+                    : "Try adjusting your filters or browse other categories."}
                 </p>
                 {sportsProducts.length > 0 && (
                   <button

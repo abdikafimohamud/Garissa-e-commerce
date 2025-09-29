@@ -193,45 +193,43 @@ const Electronics = ({ addToCart }) => {
           </div>
         </div>
 
-        <div className="flex md:flex-row gap-0 mb-8">
-          {/* Filters Sidebar */}
-          <div className="hidden md:block w-64 space-y-6">
-            {brands.length > 0 && (
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-medium mb-4">Brands</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {brands.map((brand) => (
-                    <label
-                      key={brand}
-                      className="flex items-center cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={() =>
-                          setSelectedBrands((prev) =>
-                            prev.includes(brand)
-                              ? prev.filter((b) => b !== brand)
-                              : [...prev, brand]
-                          )
-                        }
-                        className="checkbox checkbox-primary checkbox-sm mr-3"
-                      />
-                      <span className="text-sm capitalize">{brand}</span>
-                    </label>
-                  ))}
-                </div>
-                {selectedBrands.length > 0 && (
-                  <button
-                    onClick={() => setSelectedBrands([])}
-                    className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* Brand Filter Sidebar */}
+          {brands.length > 0 && (
+            <div className="bg-white p-6 rounded-xl shadow-sm hidden md:block w-64">
+              <h3 className="font-medium mb-4">Brands</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {brands.map((brand) => (
+                  <label
+                    key={brand}
+                    className="flex items-center cursor-pointer"
                   >
-                    Clear brands
-                  </button>
-                )}
+                    <input
+                      type="checkbox"
+                      checked={selectedBrands.includes(brand)}
+                      onChange={() =>
+                        setSelectedBrands((prev) =>
+                          prev.includes(brand)
+                            ? prev.filter((b) => b !== brand)
+                            : [...prev, brand]
+                        )
+                      }
+                      className="checkbox checkbox-primary checkbox-sm mr-3"
+                    />
+                    <span className="text-sm capitalize">{brand}</span>
+                  </label>
+                ))}
               </div>
-            )}
-          </div>
+              {selectedBrands.length > 0 && (
+                <button
+                  onClick={() => setSelectedBrands([])}
+                  className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear brands
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Products Grid */}
           <div className="flex-1">
