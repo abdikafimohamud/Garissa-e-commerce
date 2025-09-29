@@ -36,6 +36,10 @@ def create_app():
         expose_headers=Config.CORS_EXPOSE_HEADERS
     )
 
+    # Serve uploads directory as static files
+    app.static_folder = 'uploads'
+    app.static_url_path = '/uploads'
+
     # ===== Init Extensions =====
     db.init_app(app)
     migrate.init_app(app, db)

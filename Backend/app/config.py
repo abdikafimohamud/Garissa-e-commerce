@@ -10,9 +10,8 @@ class Config:
 
     # CORS
     CORS_ORIGINS = [
-        "http://localhost:5173", 
+        "http://localhost:5173",
         "http://127.0.0.1:5173",
-        
     ]
     CORS_SUPPORTS_CREDENTIALS = True
     CORS_ALLOW_HEADERS = ["Content-Type", "Authorization", "Accept"]
@@ -21,11 +20,11 @@ class Config:
 
     # ✅ Session – using Flask’s built-in secure cookie session
     SESSION_COOKIE_NAME = "garissa_session"
-    SESSION_COOKIE_SAMESITE = "Lax"    # good for localhost
-    SESSION_COOKIE_SECURE = False      # True only on HTTPS
+    SESSION_COOKIE_SAMESITE = "None"    # <-- updated to allow cross-site cookies
+    SESSION_COOKIE_SECURE = True       # True only when serving over HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_PATH = "/"
-    SESSION_COOKIE_DOMAIN = None
+    SESSION_COOKIE_DOMAIN = None  # Works for both localhost and 127.0.0.1
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
     # Mail
