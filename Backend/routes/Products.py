@@ -8,7 +8,7 @@ from app.models import Product
 products_bp = Blueprint('products', __name__)
 
 # Configuration for file uploads
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
 
@@ -141,7 +141,7 @@ def product_detail(product_id):
         if request.method == 'GET':
             return jsonify({
                 "product": product.to_dict()
-            }), 200
+            }, 200)
 
         elif request.method == 'PUT':
             if request.files:

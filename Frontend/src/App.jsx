@@ -43,7 +43,6 @@ import Sports from "./Dashboard/Sports";
 import Cart from "./Dashboard/Cart";
 import Checkout from "./Dashboard/Checkout";
 import OrderDetails from "./Dashboard/OrderDetails";
-import Profilee from "./Dashboard/Profilee";
 import BuyerProfile from "./Dashboard/BuyerProfile";
 import Notifications from "./Dashboard/Notifications";
 
@@ -135,7 +134,6 @@ function App() {
             path="sports"
             element={<Sports addToCart={addToCart} />}
           />
-          <Route path="Profilee" element={<Profilee />} />
           <Route path="profile" element={<BuyerProfile />} />
           <Route
             path="cart"

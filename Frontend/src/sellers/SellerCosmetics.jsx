@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const SellerCosmetics = () => {
   const [formData, setFormData] = useState({
@@ -8,19 +8,18 @@ const SellerCosmetics = () => {
     category: 'cosmetics',
     subcategory: 'makeup',
     brand: '',
-    image: null,
-    stock: '',
+    stock: 0,
     rating: 0,
     isNew: false,
     isBestSeller: false,
+    imageUrl: '',
     releaseDate: new Date().toISOString().split('T')[0]
   });
-  const [imagePreview, setImagePreview] = useState(null);
-
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const API_URL = 'http://localhost:5000/api/products';
 
   useEffect(() => {
@@ -28,7 +27,7 @@ const SellerCosmetics = () => {
       try {
         setLoading(true);
         const response = await fetch(API_URL, {
-          credentials: "include", // Include cookies for session authentication
+          credentials: "include",
         });
         if (!response.ok) throw new Error('Failed to fetch products');
         const data = await response.json();
@@ -42,8 +41,10 @@ const SellerCosmetics = () => {
         }
 
         setProducts(cosmeticsProducts);
+        setError(null);
       } catch (error) {
         console.error('Error fetching products: ', error);
+        setError('Failed to fetch products: ' + error.message);
       } finally {
         setLoading(false);
       }
@@ -54,68 +55,49 @@ const SellerCosmetics = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    if (type === "file") {
-      const file = e.target.files[0];
-      setFormData({
-        ...formData,
-        [name]: file,
-      });
-
-      // Create preview
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setImagePreview(null);
-      }
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === "checkbox" ? checked : value,
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const productData = new FormData();
-    productData.append("name", formData.name);
-    productData.append("price", parseFloat(formData.price));
-    productData.append("description", formData.description);
-    productData.append("category", formData.category);
-    productData.append("subcategory", formData.subcategory);
-    productData.append("brand", formData.brand);
-    productData.append("stock", parseInt(formData.stock));
-    productData.append("rating", parseFloat(formData.rating));
-    productData.append("isNew", formData.isNew);
-    productData.append("isBestSeller", formData.isBestSeller);
-
-    if (formData.image) {
-      productData.append("image", formData.image);
-    }
-
     try {
+      const productData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        brand: formData.brand,
+        stock: parseInt(formData.stock),
+        rating: parseFloat(formData.rating),
+        isNew: formData.isNew,
+        isBestSeller: formData.isBestSeller,
+        imageUrl: formData.imageUrl,
+        releaseDate: formData.releaseDate
+      };
+
       if (editingId) {
         const response = await fetch(`${API_URL}/${editingId}`, {
           method: 'PUT',
-          body: productData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
           credentials: "include",
         });
 
         if (!response.ok) throw new Error('Failed to update product');
 
         const updatedProduct = await response.json();
-        setProducts(products.map(p => p.id === editingId ? updatedProduct.product : p));
+        setProducts(products.map(p => (p.id || p._id) === editingId ? updatedProduct.product : p));
         setEditingId(null);
       } else {
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: productData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
           credentials: "include",
         });
 
@@ -133,29 +115,34 @@ const SellerCosmetics = () => {
         category: 'cosmetics',
         subcategory: 'makeup',
         brand: '',
-        image: null,
-        stock: '',
+        stock: 0,
         rating: 0,
         isNew: false,
         isBestSeller: false,
+        imageUrl: '',
         releaseDate: new Date().toISOString().split('T')[0]
       });
-      setImagePreview(null);
-
-      // Reset file input
-      document.getElementById("imageInput").value = "";
+      setError(null);
     } catch (error) {
       console.error('Error saving product: ', error);
-      alert('Error saving product: ' + error.message);
+      setError('Error saving product: ' + error.message);
     }
   };
 
   const handleEdit = (product) => {
     setFormData({
-      ...product,
-      price: product.price.toString(),
-      stock: product.stock.toString(),
-      rating: product.rating.toString()
+      name: product.name || '',
+      price: product.price ? product.price.toString() : '',
+      description: product.description || '',
+      category: product.category || 'cosmetics',
+      subcategory: product.subcategory || product.subCategory || 'makeup',
+      brand: product.brand || '',
+      stock: product.stock ? product.stock.toString() : '0',
+      rating: product.rating || 0,
+      isNew: product.isNew || product.is_new || false,
+      isBestSeller: product.isBestSeller || product.is_best_seller || false,
+      imageUrl: product.imageUrl || product.image_url || '',
+      releaseDate: product.releaseDate || new Date().toISOString().split('T')[0]
     });
     setEditingId(product.id || product._id);
   };
@@ -171,11 +158,31 @@ const SellerCosmetics = () => {
         if (!response.ok) throw new Error('Failed to delete product');
 
         setProducts(products.filter(p => (p.id || p._id) !== id));
+        setError(null);
       } catch (error) {
         console.error('Error deleting product: ', error);
-        alert('Error deleting product: ' + error.message);
+        setError('Error deleting product: ' + error.message);
       }
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      price: '',
+      description: '',
+      category: 'cosmetics',
+      subcategory: 'makeup',
+      brand: '',
+      stock: 0,
+      rating: 0,
+      isNew: false,
+      isBestSeller: false,
+      imageUrl: '',
+      releaseDate: new Date().toISOString().split('T')[0]
+    });
+    setEditingId(null);
+    setError(null);
   };
 
   const filteredProducts = products.filter(product =>
@@ -186,24 +193,16 @@ const SellerCosmetics = () => {
 
   // Function to get image URL from product object
   const getProductImageUrl = (product) => {
-    // Check if the product has an image_filename (from backend)
-    if (product.image_filename) {
-      return `http://localhost:5000/uploads/${product.image_filename}`;
-    }
-
-    // Check if the product has an image_url (from backend)
-    if (product.image_url) {
-      return product.image_url;
-    }
-
-    // Fallback to other possible properties
-    return (product.images && product.images[0]) || "/default-image.jpg";
+    return product.imageUrl || product.image_url || "/default-image.jpg";
   };
 
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
-        <p className="text-lg">Loading products...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="text-lg mt-2">Loading products...</p>
+        </div>
       </div>
     );
   }
@@ -211,6 +210,18 @@ const SellerCosmetics = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Cosmetics Management</h1>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <strong>Error: </strong>{error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-4 text-red-800 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-xl font-semibold mb-4">
@@ -267,6 +278,16 @@ const SellerCosmetics = () => {
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Category*</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                readOnly
+                className="w-full p-2 border rounded bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Sub Category*</label>
               <select
                 name="subcategory"
                 value={formData.subcategory}
@@ -325,28 +346,31 @@ const SellerCosmetics = () => {
               </label>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-1">Product Image*</label>
+              <label className="block text-gray-700 mb-1">Image URL*</label>
               <input
-                id="imageInput"
-                type="file"
-                name="image"
+                type="url"
+                name="imageUrl"
+                value={formData.imageUrl}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded"
-                accept="image/*"
+                placeholder="https://example.com/image.jpg"
                 required
               />
             </div>
 
             {/* Image Preview */}
-            {imagePreview && (
+            {formData.imageUrl && (
               <div className="md:col-span-2">
                 <label className="block text-gray-700 mb-2">
                   Image Preview
                 </label>
                 <img
-                  src={imagePreview}
+                  src={formData.imageUrl}
                   alt="Preview"
                   className="w-32 h-32 object-cover border rounded"
+                  onError={(e) => {
+                    e.target.src = "/default-image.jpg";
+                  }}
                 />
               </div>
             )}
@@ -366,25 +390,7 @@ const SellerCosmetics = () => {
             {editingId && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setFormData({
-                    name: '',
-                    price: '',
-                    description: '',
-                    category: 'cosmetics',
-                    subcategory: 'makeup',
-                    brand: '',
-                    image: null,
-                    stock: '',
-                    rating: 0,
-                    isNew: false,
-                    isBestSeller: false,
-                    releaseDate: new Date().toISOString().split('T')[0]
-                  });
-                  setImagePreview(null);
-                  document.getElementById("imageInput").value = "";
-                }}
+                onClick={resetForm}
                 className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
                 Cancel
@@ -429,6 +435,7 @@ const SellerCosmetics = () => {
                   <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                   <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                   <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
                   <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -442,7 +449,7 @@ const SellerCosmetics = () => {
                         alt={product.name}
                         className="w-12 h-12 object-cover rounded"
                         onError={(e) => {
-                          e.target.src = '/placeholder-product.jpg';
+                          e.target.src = '/default-image.jpg';
                         }}
                       />
                     </td>
@@ -453,6 +460,7 @@ const SellerCosmetics = () => {
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">${product.price?.toFixed(2)}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{product.stock}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{product.rating || 0}</td>
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1">
                         {product.isNew && (

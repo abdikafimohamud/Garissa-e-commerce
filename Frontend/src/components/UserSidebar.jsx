@@ -10,7 +10,6 @@ export default function UserSidebar() {
     { path: "/Buyers/cart", label: "Cart", icon: "🛒" },
     { path: "/Buyers/checkout", label: "Checkout", icon: "💰" },
     { path: "/Buyers/order-details", label: "Order Details", icon: "📋" }, // lowercase path
-    { path: "/Buyers/profilee", label: "Profile", icon: "👤" },
     { path: "/Buyers/profile", label: "Profile Settings", icon: "⚙️" },
     { path: "/Buyers/notifications", label: "Notifications", icon: "🔔" },
   ];

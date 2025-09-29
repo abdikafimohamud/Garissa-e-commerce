@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const ClothesManagement = () => {
@@ -8,20 +8,18 @@ const ClothesManagement = () => {
     description: "",
     category: "clothes",
     subcategory: "men",
-    image: null,
-    stock: "",
+    stock: 0,
     rating: 0,
     isNew: false,
     isBestSeller: false,
+    imageUrl: "",
   });
-  const [imagePreview, setImagePreview] = useState(null);
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
   const API_URL = "http://localhost:5000/api/products";
-  const UPLOADS_URL = "http://localhost:5000/uploads/";
   
   // ✅ Use the auth context to check authentication
   const { isAuthenticated, user } = useAuth();
@@ -71,30 +69,10 @@ const ClothesManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (type === "file") {
-      const file = e.target.files[0];
-      setFormData({
-        ...formData,
-        [name]: file,
-      });
-      
-      // Create preview
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setImagePreview(null);
-      }
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === "checkbox" ? checked : value,
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -106,29 +84,28 @@ const ClothesManagement = () => {
       return;
     }
 
-    const productData = new FormData();
-    productData.append("name", formData.name);
-    productData.append("price", parseFloat(formData.price));
-    productData.append("description", formData.description);
-    productData.append("category", formData.category);
-    productData.append("subcategory", formData.subcategory);
-    productData.append("stock", parseInt(formData.stock));
-    productData.append("rating", parseFloat(formData.rating));
-    productData.append("isNew", formData.isNew);
-    productData.append("isBestSeller", formData.isBestSeller);
-    
-    if (formData.image) {
-      productData.append("image", formData.image);
-    }
-
     try {
       setLoading(true);
       setError("");
 
+      const productData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        stock: parseInt(formData.stock),
+        rating: parseFloat(formData.rating),
+        isNew: formData.isNew,
+        isBestSeller: formData.isBestSeller,
+        imageUrl: formData.imageUrl,
+      };
+
       if (editingId) {
         const response = await fetch(`${API_URL}/${editingId}`, {
           method: "PUT",
-          body: productData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
           credentials: "include",
         });
 
@@ -149,7 +126,8 @@ const ClothesManagement = () => {
       } else {
         const response = await fetch(API_URL, {
           method: "POST",
-          body: productData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
           credentials: "include",
         });
 
@@ -171,17 +149,12 @@ const ClothesManagement = () => {
         description: "",
         category: "clothes",
         subcategory: "men",
-        image: null,
-        stock: "",
+        stock: 0,
         rating: 0,
         isNew: false,
         isBestSeller: false,
+        imageUrl: "",
       });
-      setImagePreview(null);
-      
-      // Reset file input
-      const fileInput = document.getElementById("imageInput");
-      if (fileInput) fileInput.value = "";
 
     } catch (error) {
       console.error("Error saving product: ", error);
@@ -198,16 +171,13 @@ const ClothesManagement = () => {
       description: product.description || "",
       category: product.category || "clothes",
       subcategory: product.subcategory || "men",
-      image: null,
-      stock: product.stock ? product.stock.toString() : "",
+      stock: product.stock ? product.stock.toString() : "0",
       rating: product.rating || 0,
-      isNew: product.is_new || false,
-      isBestSeller: product.is_best_seller || false,
+      isNew: product.isNew || product.is_new || false,
+      isBestSeller: product.isBestSeller || product.is_best_seller || false,
+      imageUrl: product.imageUrl || product.image_url || "",
     });
-    
-    // Show the current image as preview
-    setImagePreview(getProductImageUrl(product));
-    setEditingId(product.id);
+    setEditingId(product.id || product._id);
   };
 
   const handleDelete = async (id) => {
@@ -231,7 +201,7 @@ const ClothesManagement = () => {
           throw new Error("Failed to delete product");
         }
 
-        setProducts(products.filter((p) => p.id !== id));
+        setProducts(products.filter((p) => (p.id || p._id) !== id));
       } catch (error) {
         console.error("Error deleting product: ", error);
         setError("Error deleting product: " + error.message);
@@ -249,31 +219,17 @@ const ClothesManagement = () => {
       description: "",
       category: "clothes",
       subcategory: "men",
-      image: null,
-      stock: "",
+      stock: 0,
       rating: 0,
       isNew: false,
       isBestSeller: false,
+      imageUrl: "",
     });
-    setImagePreview(null);
-    const fileInput = document.getElementById("imageInput");
-    if (fileInput) fileInput.value = "";
   };
 
   // Function to get image URL from product object
   const getProductImageUrl = (product) => {
-    // Check if the product has an image_filename (from backend)
-    if (product.image_filename) {
-      return `${UPLOADS_URL}${product.image_filename}`;
-    }
-    
-    // Check if the product has an image_url (from backend)
-    if (product.image_url) {
-      return product.image_url;
-    }
-    
-    // Fallback to other possible properties
-    return (product.images && product.images[0]) || "/default-image.jpg";
+    return product.imageUrl || product.image_url || "/default-image.jpg";
   };
 
   // Show authentication message if user is not logged in as seller
@@ -299,6 +255,12 @@ const ClothesManagement = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+          <button
+            onClick={() => setError("")}
+            className="ml-4 text-red-800 font-bold"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -306,7 +268,7 @@ const ClothesManagement = () => {
         <h2 className="text-xl font-semibold mb-4">
           {editingId ? "Edit Product" : "Add New Product"}
         </h2>
-        <form onSubmit={handleSubmit} encType="multipart/form-data">
+        <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-gray-700 mb-2">Product Name</label>
@@ -336,6 +298,17 @@ const ClothesManagement = () => {
             </div>
             <div>
               <label className="block text-gray-700 mb-2">Category</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                readOnly
+                className="w-full p-2 border rounded bg-gray-100"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Sub Category</label>
               <select
                 name="subcategory"
                 value={formData.subcategory}
@@ -401,28 +374,31 @@ const ClothesManagement = () => {
               </label>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Product Image</label>
+              <label className="block text-gray-700 mb-2">Image URL</label>
               <input
-                id="imageInput"
-                type="file"
-                name="image"
+                type="url"
+                name="imageUrl"
+                value={formData.imageUrl}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded"
-                accept="image/*"
+                placeholder="https://example.com/image.jpg"
                 disabled={loading}
               />
             </div>
 
             {/* Image Preview */}
-            {imagePreview && (
+            {formData.imageUrl && (
               <div className="md:col-span-2">
                 <label className="block text-gray-700 mb-2">
                   Image Preview
                 </label>
                 <img
-                  src={imagePreview}
+                  src={formData.imageUrl}
                   alt="Preview"
                   className="w-32 h-32 object-cover border rounded"
+                  onError={(e) => {
+                    e.target.src = "/default-image.jpg";
+                  }}
                 />
               </div>
             )}
@@ -483,13 +459,14 @@ const ClothesManagement = () => {
                   <th className="py-2 px-4 border-b">Category</th>
                   <th className="py-2 px-4 border-b">Price</th>
                   <th className="py-2 px-4 border-b">Stock</th>
+                  <th className="py-2 px-4 border-b">Rating</th>
                   <th className="py-2 px-4 border-b">Status</th>
                   <th className="py-2 px-4 border-b">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id}>
+                  <tr key={product.id || product._id}>
                     <td className="py-2 px-4 border-b">
                       <img
                         src={getProductImageUrl(product)}
@@ -506,14 +483,15 @@ const ClothesManagement = () => {
                     </td>
                     <td className="py-2 px-4 border-b">${product.price}</td>
                     <td className="py-2 px-4 border-b">{product.stock}</td>
+                    <td className="py-2 px-4 border-b">{product.rating || 0}</td>
                     <td className="py-2 px-4 border-b">
                       <div className="flex flex-wrap gap-1">
-                        {product.is_new && (
+                        {product.isNew && (
                           <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                             New
                           </span>
                         )}
-                        {product.is_best_seller && (
+                        {product.isBestSeller && (
                           <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
                             Bestseller
                           </span>
@@ -529,7 +507,7 @@ const ClothesManagement = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product.id || product._id)}
                         className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
                         disabled={loading}
                       >
