@@ -192,21 +192,6 @@ const AdminLogin = () => {
             </button>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-300 mb-2">
-              Demo Admin Credentials:
-            </h3>
-            <div className="text-sm text-gray-400">
-              <p>
-                <strong>Email:</strong> admin@garissa.com
-              </p>
-              <p>
-                <strong>Password:</strong> Admin123
-              </p>
-            </div>
-          </div>
-
           {/* Navigation Links */}
           <div className="text-center">
             <div className="text-sm text-gray-300">

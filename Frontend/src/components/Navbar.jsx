@@ -161,14 +161,6 @@ const LoggedOutNavLinks = () => {
       </Link>
 
       <Link
-        to="/admin"
-        className="flex items-center hover:text-indigo-200 transition-colors"
-      >
-        <FaCog className="mr-1" />
-        <span>Admin</span>
-      </Link>
-
-      <Link
         to="/buyer-login"
         className="flex items-center hover:text-indigo-200 transition-colors"
       >
