@@ -9,14 +9,17 @@ const SellerSports = () => {
     price: "",
     category: "sports",
     subcategory: "T-shirts",
+    brand: "",
     stock: 0,
     rating: 0,
     isNew: false,
     isBestSeller: false,
     imageUrl: "",
     description: "",
+    releaseDate: new Date().toISOString().split('T')[0]
   });
   const [editingId, setEditingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const API_URL = "http://localhost:5000/api/products";
 
   useEffect(() => {
@@ -27,7 +30,7 @@ const SellerSports = () => {
     try {
       setLoading(true);
       const res = await fetch(API_URL, {
-        credentials: "include", // Include cookies for session authentication
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -83,16 +86,24 @@ const SellerSports = () => {
     const url = editingId ? `${API_URL}/${editingId}` : API_URL;
 
     try {
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        rating: parseFloat(formData.rating)
+      };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Include cookies for session authentication
-        body: JSON.stringify(formData),
+        credentials: "include",
+        body: JSON.stringify(productData),
       });
 
       if (res.ok) {
         fetchSports();
         resetForm();
+        setError(null);
       } else {
         throw new Error(`Failed to save: ${res.status}`);
       }
@@ -103,7 +114,20 @@ const SellerSports = () => {
   };
 
   const handleEdit = (item) => {
-    setFormData(item);
+    setFormData({
+      name: item.name || "",
+      price: item.price ? item.price.toString() : "",
+      category: item.category || "sports",
+      subcategory: item.subcategory || "T-shirts",
+      brand: item.brand || "",
+      stock: item.stock ? item.stock.toString() : "0",
+      rating: item.rating || 0,
+      isNew: item.isNew || item.is_new || false,
+      isBestSeller: item.isBestSeller || item.is_best_seller || false,
+      imageUrl: item.imageUrl || item.image_url || "",
+      description: item.description || "",
+      releaseDate: item.releaseDate || new Date().toISOString().split('T')[0]
+    });
     setEditingId(item._id || item.id);
   };
 
@@ -113,10 +137,11 @@ const SellerSports = () => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
-        credentials: "include", // Include cookies for session authentication
+        credentials: "include",
       });
       if (res.ok) {
         setSports((prev) => prev.filter((item) => (item._id || item.id) !== id));
+        setError(null);
       } else {
         throw new Error(`Failed to delete: ${res.status}`);
       }
@@ -132,21 +157,44 @@ const SellerSports = () => {
       price: "",
       category: "sports",
       subcategory: "T-shirts",
+      brand: "",
       stock: 0,
       rating: 0,
       isNew: false,
       isBestSeller: false,
       imageUrl: "",
       description: "",
+      releaseDate: new Date().toISOString().split('T')[0]
     });
     setEditingId(null);
   };
 
+  const filteredProducts = sports.filter(product =>
+    (product.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (product.brand?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (product.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const categories = [
+    { id: 'T-shirts', name: 'T-shirts' },
+    { id: 'Football', name: 'Football' },
+    { id: 'Shoes', name: 'Shoes' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-lg mt-2">Loading sports products...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">
-        {editingId ? "Edit Sports Product" : "Add New Sports Product"}
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">Sports Management</h1>
 
       {/* Error message */}
       {error && (
@@ -166,10 +214,14 @@ const SellerSports = () => {
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-lg shadow-md mb-8"
       >
+        <h2 className="text-xl font-semibold mb-4">
+          {editingId ? "Edit Sports Product" : "Add New Sports Product"}
+        </h2>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Product Name */}
           <div>
-            <label className="block mb-1">Product Name</label>
+            <label className="block text-gray-700 mb-1">Product Name*</label>
             <input
               type="text"
               name="name"
@@ -180,22 +232,51 @@ const SellerSports = () => {
             />
           </div>
 
-          {/* Price */}
+          {/* Brand */}
           <div>
-            <label className="block mb-1">Price ($)</label>
+            <label className="block text-gray-700 mb-1">Brand*</label>
             <input
-              type="number"
-              name="price"
-              value={formData.price}
+              type="text"
+              name="brand"
+              value={formData.brand}
               onChange={handleChange}
               className="w-full border p-2 rounded"
               required
             />
           </div>
 
+          {/* Price */}
+          <div>
+            <label className="block text-gray-700 mb-1">Price ($)*</label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          {/* Stock */}
+          <div>
+            <label className="block text-gray-700 mb-1">Stock Quantity*</label>
+            <input
+              type="number"
+              name="stock"
+              value={formData.stock}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              min="0"
+              required
+            />
+          </div>
+
           {/* Category (fixed) */}
           <div>
-            <label className="block mb-1">Category</label>
+            <label className="block text-gray-700 mb-1">Category</label>
             <input
               type="text"
               name="category"
@@ -207,34 +288,23 @@ const SellerSports = () => {
 
           {/* SubCategory */}
           <div>
-            <label className="block mb-1">Sub Category</label>
+            <label className="block text-gray-700 mb-1">Sub Category*</label>
             <select
               name="subcategory"
               value={formData.subcategory}
               onChange={handleChange}
               className="w-full border p-2 rounded"
+              required
             >
-              <option value="T-shirts">T-shirts</option>
-              <option value="Football">Football</option>
-              <option value="Shoes">Shoes</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
             </select>
-          </div>
-
-          {/* Stock */}
-          <div>
-            <label className="block mb-1">Stock Quantity</label>
-            <input
-              type="number"
-              name="stock"
-              value={formData.stock}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
-            />
           </div>
 
           {/* Rating */}
           <div>
-            <label className="block mb-1">Rating (0-5)</label>
+            <label className="block text-gray-700 mb-1">Rating (0-5)</label>
             <input
               type="number"
               step="0.1"
@@ -247,57 +317,91 @@ const SellerSports = () => {
             />
           </div>
 
+          {/* Release Date */}
+          <div>
+            <label className="block text-gray-700 mb-1">Release Date</label>
+            <input
+              type="date"
+              name="releaseDate"
+              value={formData.releaseDate}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+          </div>
+
           {/* Checkboxes */}
-          <div className="flex items-center gap-4">
-            <label>
+          <div className="flex items-center space-x-4">
+            <label className="flex items-center">
               <input
                 type="checkbox"
                 name="isNew"
                 checked={formData.isNew}
                 onChange={handleChange}
-              />{" "}
-              New Product
+                className="mr-2"
+              />
+              <span className="text-gray-700">New Product</span>
             </label>
-            <label>
+            <label className="flex items-center">
               <input
                 type="checkbox"
                 name="isBestSeller"
                 checked={formData.isBestSeller}
                 onChange={handleChange}
-              />{" "}
-              Best Seller
+                className="mr-2"
+              />
+              <span className="text-gray-700">Best Seller</span>
             </label>
           </div>
 
           {/* Image URL */}
-          <div>
-            <label className="block mb-1">Image URL</label>
+          <div className="md:col-span-2">
+            <label className="block text-gray-700 mb-1">Image URL*</label>
             <input
               type="url"
               name="imageUrl"
               value={formData.imageUrl}
               onChange={handleChange}
               className="w-full border p-2 rounded"
+              placeholder="https://example.com/image.jpg"
+              required
             />
           </div>
 
+          {/* Image Preview */}
+          {formData.imageUrl && (
+            <div className="md:col-span-2">
+              <label className="block text-gray-700 mb-2">
+                Image Preview
+              </label>
+              <img
+                src={formData.imageUrl}
+                alt="Preview"
+                className="w-32 h-32 object-cover border rounded"
+                onError={(e) => {
+                  e.target.src = "/default-image.jpg";
+                }}
+              />
+            </div>
+          )}
+
           {/* Description */}
           <div className="md:col-span-2">
-            <label className="block mb-1">Description</label>
+            <label className="block text-gray-700 mb-1">Description*</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               className="w-full border p-2 rounded"
               rows={3}
+              required
             />
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="flex justify-end space-x-3 mt-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             {editingId ? "Update Product" : "Add Product"}
           </button>
@@ -305,7 +409,7 @@ const SellerSports = () => {
             <button
               type="button"
               onClick={resetForm}
-              className="ml-4 bg-gray-500 text-white px-4 py-2 rounded"
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
             >
               Cancel
             </button>
@@ -313,80 +417,96 @@ const SellerSports = () => {
         </div>
       </form>
 
-      {/* Loading state */}
-      {loading && (
-        <div className="text-center p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2">Loading sports products...</p>
+      {/* Product Table */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <h2 className="text-xl font-semibold mb-2 md:mb-0">
+            Sports Products ({filteredProducts.length})
+          </h2>
+          <div className="w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
         </div>
-      )}
 
-      {/* Table */}
-      {!loading && (
-        <div className="bg-white rounded-lg shadow-md p-4 overflow-x-auto">
-          <table className="w-full text-sm border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2">Image</th>
-                <th className="border p-2">Name</th>
-                <th className="border p-2">Price</th>
-                <th className="border p-2">SubCategory</th>
-                <th className="border p-2">Stock</th>
-                <th className="border p-2">Rating</th>
-                <th className="border p-2">New</th>
-                <th className="border p-2">Best Seller</th>
-                <th className="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sports.length > 0 ? (
-                sports.map((item) => (
-                  <tr key={item._id || item.id}>
-                    <td className="border p-2">
+        {filteredProducts.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">No sports products found</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredProducts.map((item) => (
+                  <tr key={item._id || item.id} className="hover:bg-gray-50">
+                    <td className="py-4 px-4">
                       <img
-                        src={item.imageUrl}
+                        src={item.imageUrl || item.image_url}
                         alt={item.name}
-                        className="w-14 h-14 object-cover"
+                        className="w-12 h-12 object-cover rounded"
+                        onError={(e) => {
+                          e.target.src = "/default-image.jpg";
+                        }}
                       />
                     </td>
-                    <td className="border p-2">{item.name}</td>
-                    <td className="border p-2">${item.price}</td>
-                    <td className="border p-2">{item.subcategory}</td>
-                    <td className="border p-2">{item.stock}</td>
-                    <td className="border p-2">{item.rating}</td>
-                    <td className="border p-2">
-                      {item.isNew ? "✅" : "❌"}
+                    <td className="py-4 px-4 text-sm font-medium text-gray-900">{item.name}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{item.brand}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500 capitalize">{item.subcategory}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">${item.price}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{item.stock}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{item.rating || 0}</td>
+                    <td className="py-4 px-4">
+                      <div className="flex flex-wrap gap-1">
+                        {item.isNew && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">New</span>
+                        )}
+                        {item.isBestSeller && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Bestseller</span>
+                        )}
+                        {item.stock <= 0 && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Out of Stock</span>
+                        )}
+                      </div>
                     </td>
-                    <td className="border p-2">
-                      {item.isBestSeller ? "✅" : "❌"}
-                    </td>
-                    <td className="border p-2 flex gap-2">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="bg-yellow-500 text-white px-2 py-1 rounded"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item._id || item.id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded"
-                      >
-                        Delete
-                      </button>
+                    <td className="py-4 px-4 text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item._id || item.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="9" className="text-center p-4">
-                    No sports products found. {error ? "Check your API connection." : "Add some sports products to get started!"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -194,7 +194,7 @@ const Clothes = ({ addToCart }) => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-[#f8f6ff]">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white py-16 px-4 text-center">
         <h1 className="text-4xl font-bold mb-4">Garissa Fashion Collection</h1>
@@ -250,10 +250,9 @@ const Clothes = ({ addToCart }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <div className="flex md:flex-row gap-0 mb-8">
           {/* Filters Sidebar */}
-          <div className="w-full md:w-72 space-y-6">
-            {/* Brand Filter */}
+          <div className="hidden md:block w-64 space-y-6">
             {brands.length > 0 && (
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h3 className="font-medium mb-4">Brands</h3>

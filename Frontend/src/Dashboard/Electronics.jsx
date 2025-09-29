@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Products from "../pages/Buyers";
 
 const Electronics = ({ addToCart }) => {
   const [electronicsProducts, setElectronicsProducts] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  // Removed priceRange state
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sortOption, setSortOption] = useState("featured");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const fetchElectronics = async () => {
@@ -16,12 +17,12 @@ const Electronics = ({ addToCart }) => {
         setLoading(true);
         setError(null);
 
-        // Use the new public API endpoint with category filter
-        const res = await fetch("http://localhost:5000/api/products/public?category=electronics");
+        const res = await fetch(
+          "http://localhost:5000/api/products/public?category=electronics"
+        );
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
 
-        // The public API returns products in a structured format
         const electronicsData = data.products || [];
         setElectronicsProducts(electronicsData);
       } catch (err) {
@@ -33,13 +34,13 @@ const Electronics = ({ addToCart }) => {
     };
 
     fetchElectronics();
-  }, []);
+  }, [refreshTrigger]);
 
   const brands = [
     ...new Set(electronicsProducts.map((p) => p.brand?.trim()).filter(Boolean)),
   ];
 
-  // FIX: Normalize subcategories to handle partial matches
+  // Normalize subcategories to handle partial matches
   const normalizeSubCategory = (subCategory) => {
     if (!subCategory) return null;
     const normalized = subCategory.trim().toLowerCase();
@@ -69,13 +70,9 @@ const Electronics = ({ addToCart }) => {
         activeCategory === "all" ||
         normalizeSubCategory(product.subCategory) === activeCategory ||
         normalizeSubCategory(product.subcategory) === activeCategory;
-
-      const priceMatch =
-        product.price >= priceRange[0] && product.price <= priceRange[1];
       const brandMatch =
         selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-
-      return categoryMatch && priceMatch && brandMatch;
+      return categoryMatch && brandMatch;
     })
     .sort((a, b) => {
       switch (sortOption) {
@@ -88,6 +85,10 @@ const Electronics = ({ addToCart }) => {
         case "newest":
           return new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0);
         default:
+          if (a.isNew && !b.isNew) return -1;
+          if (!a.isNew && b.isNew) return 1;
+          if (a.isBestSeller && !b.isBestSeller) return -1;
+          if (!a.isBestSeller && b.isBestSeller) return 1;
           return 0;
       }
     });
@@ -102,16 +103,34 @@ const Electronics = ({ addToCart }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg font-semibold text-gray-600">Loading electronics...</p>
+      <div className="bg-gray-50 min-h-screen">
+        <div className="bg-gradient-to-r from-green-800 to-purple-700 text-white py-16 px-4 text-center">
+          <h1 className="text-4xl font-bold mb-4">Premium Electronics</h1>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-lg font-semibold text-gray-600">
+            Loading electronics products...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg font-semibold text-red-600">{error}</p>
+      <div className="bg-gray-50 min-h-screen">
+        <div className="bg-gradient-to-r from-green-800 to-purple-700 text-white py-16 px-4 text-center">
+          <h1 className="text-4xl font-bold mb-4">Premium Electronics</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center h-64">
+          <p className="text-lg font-semibold text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -130,6 +149,30 @@ const Electronics = ({ addToCart }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Refresh Button */}
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
+            className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh Products
+          </button>
+        </div>
+
         {/* Category Tabs */}
         <div className="flex overflow-x-auto pb-4 mb-8 scrollbar-hide">
           <div className="flex space-x-2">
@@ -137,10 +180,11 @@ const Electronics = ({ addToCart }) => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center px-4 py-2 rounded-full transition-colors ${activeCategory === category.id
+                className={`flex items-center px-4 py-2 rounded-full transition-colors ${
+                  activeCategory === category.id
                     ? "bg-gradient-to-r from-green-500 to-yellow-500 text-white shadow-md"
-                    : "bg-red text-gray-700 hover:bg-gray-100"
-                  }`}
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 <span className="mr-2 text-lg">{category.icon}</span>
                 {category.name}
@@ -149,43 +193,9 @@ const Electronics = ({ addToCart }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <div className="flex md:flex-row gap-0 mb-8">
           {/* Filters Sidebar */}
-          <div className="w-full md:w-72 space-y-6">
-            {/* Price Filter */}
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h3 className="font-medium mb-4">Price Range</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between mb-2">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="5000"
-                  step="100"
-                  value={priceRange[0]}
-                  onChange={(e) =>
-                    setPriceRange([parseInt(e.target.value), priceRange[1]])
-                  }
-                  className="w-full range range-primary range-sm"
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max="5000"
-                  step="100"
-                  value={priceRange[1]}
-                  onChange={(e) =>
-                    setPriceRange([priceRange[0], parseInt(e.target.value)])
-                  }
-                  className="w-full range range-primary range-sm"
-                />
-              </div>
-            </div>
-
-            {/* Brand Filter */}
+          <div className="hidden md:block w-64 space-y-6">
             {brands.length > 0 && (
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h3 className="font-medium mb-4">Brands</h3>
@@ -211,6 +221,14 @@ const Electronics = ({ addToCart }) => {
                     </label>
                   ))}
                 </div>
+                {selectedBrands.length > 0 && (
+                  <button
+                    onClick={() => setSelectedBrands([])}
+                    className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Clear brands
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -218,12 +236,19 @@ const Electronics = ({ addToCart }) => {
           {/* Products Grid */}
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h2 className="text-2xl font-semibold">
-                {categories.find((c) => c.id === activeCategory)?.name}
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({filteredProducts.length} products)
-                </span>
-              </h2>
+              <div>
+                <h2 className="text-2xl font-semibold">
+                  {categories.find((c) => c.id === activeCategory)?.name}
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({filteredProducts.length} products)
+                  </span>
+                </h2>
+                {/* Product Count */}
+                <div className="text-gray-600 mt-1">
+                  Showing {filteredProducts.length} item
+                  {filteredProducts.length !== 1 ? "s" : ""}
+                </div>
+              </div>
 
               <select
                 value={sortOption}
@@ -249,8 +274,8 @@ const Electronics = ({ addToCart }) => {
                       product.isNew
                         ? "New"
                         : product.isBestSeller
-                          ? "Bestseller"
-                          : ""
+                        ? "Bestseller"
+                        : ""
                     }
                     className="h-[250px]"
                   />
@@ -260,21 +285,27 @@ const Electronics = ({ addToCart }) => {
               <div className="text-center py-16 bg-white rounded-xl shadow-sm">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-medium text-gray-700 mb-2">
-                  No electronics products found
+                  {electronicsProducts.length === 0
+                    ? "No electronics products available."
+                    : "No products match your filters."}
                 </h3>
                 <p className="text-gray-500 mb-4">
-                  Try adjusting your filters or browse other categories
+                  {electronicsProducts.length === 0
+                    ? "Check back later for new arrivals."
+                    : "Try adjusting your filters or browse other categories."}
                 </p>
-                <button
-                  onClick={() => {
-                    setActiveCategory("all");
-                    setPriceRange([0, 5000]);
-                    setSelectedBrands([]);
-                  }}
-                  className="btn btn-primary"
-                >
-                  Reset All Filters
-                </button>
+                {electronicsProducts.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setActiveCategory("all");
+                      setSelectedBrands([]);
+                      setSortOption("featured");
+                    }}
+                    className="btn btn-primary"
+                  >
+                    Reset All Filters
+                  </button>
+                )}
               </div>
             )}
           </div>
