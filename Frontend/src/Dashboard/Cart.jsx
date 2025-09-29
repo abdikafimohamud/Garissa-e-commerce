@@ -34,6 +34,12 @@ const Cart = ({ cartItems, setCartItems }) => {
   // Calculate total
   const total = subtotal + tax + shipping;
 
+  // Function to get product image URL
+  const getProductImageUrl = (item) => {
+    // Check multiple possible image properties
+    return item.imageUrl || item.image_url || item.image || '/placeholder-product.jpg';
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
@@ -76,18 +82,35 @@ const Cart = ({ cartItems, setCartItems }) => {
                     <div className="flex flex-col md:flex-row md:items-center">
                       {/* Product Image and Info */}
                       <div className="flex items-start md:items-center md:w-6/12">
-                        <img
-                          src={item.imageUrl || '/placeholder-product.jpg'}
-                          alt={item.name}
-                          className="w-20 h-20 object-cover rounded mr-4"
-                        />
-                        <div>
-                          <h3 className="font-medium">{item.name}</h3>
+                        <div className="relative">
+                          <img
+                            src={getProductImageUrl(item)}
+                            alt={item.name}
+                            className="w-20 h-20 object-cover rounded mr-4 border"
+                            onError={(e) => {
+                              e.target.src = '/placeholder-product.jpg';
+                              e.target.classList.add('object-contain', 'p-2');
+                            }}
+                          />
+                          {item.quantity > 1 && (
+                            <span className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                              {item.quantity}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{item.name}</h3>
+                          {item.brand && (
+                            <p className="text-sm text-gray-500">Brand: {item.brand}</p>
+                          )}
                           {item.color && (
                             <p className="text-sm text-gray-600">Color: {item.color}</p>
                           )}
                           {item.size && (
                             <p className="text-sm text-gray-600">Size: {item.size}</p>
+                          )}
+                          {item.category && (
+                            <p className="text-xs text-gray-400 capitalize">Category: {item.category}</p>
                           )}
                         </div>
                       </div>
@@ -95,23 +118,27 @@ const Cart = ({ cartItems, setCartItems }) => {
                       {/* Price */}
                       <div className="mt-4 md:mt-0 md:w-2/12 text-center">
                         <span className="md:hidden text-sm text-gray-600 mr-2">Price:</span>
-                        ${item.price.toFixed(2)}
+                        <span className="font-medium text-gray-900">${item.price.toFixed(2)}</span>
                       </div>
 
                       {/* Quantity Controls */}
                       <div className="mt-4 md:mt-0 md:w-2/12 flex justify-center">
-                        <div className="flex items-center border rounded-lg overflow-hidden">
+                        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Decrease quantity"
                           >
                             <FiMinus size={14} />
                           </button>
-                          <span className="px-3 py-1">{item.quantity}</span>
+                          <span className="px-4 py-2 bg-white min-w-12 text-center font-medium">
+                            {item.quantity}
+                          </span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="px-3 py-1 bg-red-100 hover:bg-gray-200"
+                            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
+                            aria-label="Increase quantity"
                           >
                             <FiPlus size={14} />
                           </button>
@@ -119,14 +146,21 @@ const Cart = ({ cartItems, setCartItems }) => {
                       </div>
 
                       {/* Total and Remove */}
-                      <div className="mt-4 md:mt-0 md:w-2/12 flex items-center justify-end">
-                        <span className="font-medium mr-4">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
+                      <div className="mt-4 md:mt-0 md:w-2/12 flex items-center justify-end space-x-4">
+                        <div className="text-right">
+                          <span className="font-bold text-lg text-gray-900">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                          {item.quantity > 1 && (
+                            <p className="text-xs text-gray-500">
+                              ${item.price.toFixed(2)} each
+                            </p>
+                          )}
+                        </div>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-red-500 hover:text-red-700"
-                          aria-label="Remove item"
+                          className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                          aria-label="Remove item from cart"
                         >
                           <FiTrash2 size={18} />
                         </button>
@@ -137,12 +171,12 @@ const Cart = ({ cartItems, setCartItems }) => {
               </ul>
 
               {/* Clear Cart Button */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
                 <button
                   onClick={clearCart}
-                  className="text-red-600 hover:text-red-800 flex items-center text-sm"
+                  className="text-red-600 hover:text-red-800 flex items-center text-sm font-medium transition-colors"
                 >
-                  <FiTrash2 className="mr-1" />
+                  <FiTrash2 className="mr-2" />
                   Clear Shopping Cart
                 </button>
               </div>
@@ -152,9 +186,10 @@ const Cart = ({ cartItems, setCartItems }) => {
             <div className="mt-6">
               <Link
                 to="/Buyers/clothes"
-                className="inline-flex items-center text-red-600 hover:text-black-800"
+                className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
               >
-                ← Continue Shopping
+                <FiShoppingCart className="mr-2" />
+                Continue Shopping
               </Link>
             </div>
           </div>
@@ -162,9 +197,9 @@ const Cart = ({ cartItems, setCartItems }) => {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-gradient-to-r from-green-500 to-yellow-500 rounded-xl shadow-sm p-6 sticky top-4">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+              <h2 className="text-xl font-bold mb-4 text-white">Order Summary</h2>
               
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3 mb-6 text-white">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
@@ -177,13 +212,18 @@ const Cart = ({ cartItems, setCartItems }) => {
                   <span>Shipping</span>
                   <span>
                     {shipping === 0 ? (
-                      <span className="text-green-600">Free</span>
+                      <span className="text-green-200 font-medium">Free</span>
                     ) : (
                       `$${shipping.toFixed(2)}`
                     )}
                   </span>
                 </div>
-                <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-lg">
+                {subtotal < 100 && (
+                  <div className="text-sm text-yellow-200 text-center">
+                    Add ${(100 - subtotal).toFixed(2)} more for free shipping!
+                  </div>
+                )}
+                <div className="border-t border-white pt-3 flex justify-between font-bold text-lg">
                   <span>Total</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
@@ -191,7 +231,7 @@ const Cart = ({ cartItems, setCartItems }) => {
 
               {/* Discount Code */}
               <div className="mb-6">
-                <label htmlFor="discount" className="block text-sm font-medium mb-1">
+                <label htmlFor="discount" className="block text-sm font-medium mb-1 text-white">
                   Discount Code
                 </label>
                 <div className="flex">
@@ -201,7 +241,7 @@ const Cart = ({ cartItems, setCartItems }) => {
                     placeholder="Enter code"
                     className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <button className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-r-lg transition-colors">
+                  <button className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-r-lg transition-colors font-medium">
                     Apply
                   </button>
                 </div>
@@ -210,19 +250,27 @@ const Cart = ({ cartItems, setCartItems }) => {
               {/* Checkout Button */}
               <Link
                 to="/Buyers/checkout"
-                className="block w-full text-center bg-red-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                className="block w-full text-center bg-white hover:bg-gray-100 text-green-600 font-bold py-3 px-4 rounded-lg transition-colors shadow-md hover:shadow-lg"
               >
                 Proceed to Checkout
               </Link>
 
+              {/* Security Badge */}
+              <div className="mt-4 text-center">
+                <div className="text-white text-sm flex items-center justify-center">
+                  <span className="mr-2">🔒</span>
+                  Secure Checkout
+                </div>
+              </div>
+
               {/* Payment Methods */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-medium mb-2">We Accept</h3>
+              <div className="mt-6 pt-6 border-t border-white">
+                <h3 className="text-sm font-medium mb-2 text-white">We Accept</h3>
                 <div className="flex space-x-2">
-                  <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                  <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                  <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                  <div className="w-10 h-6 bg-gray-200 rounded"></div>
+                  <div className="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold">VISA</div>
+                  <div className="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold">MC</div>
+                  <div className="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold">AMEX</div>
+                  <div className="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold">PP</div>
                 </div>
               </div>
             </div>
