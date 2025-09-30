@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import Header from "./components/Header";
 import { AuthProvider } from "./context/AuthContext";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute"; // ✅ Import the unified protected route
 
 // Public Pages
 import Home from "./pages/Home";
@@ -31,7 +32,6 @@ import SellerAnalytics from "./sellers/SellerAnalytics";
 import SellerEarnings from "./sellers/SellerEarnings";
 import SellerNotifications from "./sellers/SellerNotifications";
 import SellerProfile from "./sellers/SellerProfile";
-
 
 // User Dashboard
 import DashboardLayout from "./Dashboard/DashboardLayout";
@@ -115,7 +115,14 @@ function App() {
         </Route>
 
         {/* 👤 User Dashboard (protected, no duplicate navbar/footer) */}
-        <Route path="/Buyers" element={<DashboardLayout />}>
+        <Route
+          path="/Buyers"
+          element={
+            <ProtectedRoute role="buyer">
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard-home" replace />} />
           <Route path="dashboard-home" element={<DashboardHome />} />
           <Route
@@ -147,9 +154,15 @@ function App() {
           <Route path="Notifications" element={<Notifications />} />
         </Route>
 
-
         {/* 🏬 Sellers dashboard */}
-        <Route path="/seller" element={<SellerDashboardLayout />}>
+        <Route
+          path="/seller"
+          element={
+            <ProtectedRoute role="seller">
+              <SellerDashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard-home" replace />} />
           <Route path="dashboard-home" element={<SellerHome />} />
           <Route path="clothes" element={<Sellerclothes />} />
@@ -168,7 +181,14 @@ function App() {
         <Route path="/admin" element={<AdminLogin />} />
 
         {/* Admin Dashboard - Protected Routes */}
-        <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboardLayout /></AdminProtectedRoute>}>
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardLayout />
+            </AdminProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard-home" replace />} />
           <Route path="dashboard-home" element={<AdminHome />} />
           <Route path="sellers" element={<SellersManagement />} />

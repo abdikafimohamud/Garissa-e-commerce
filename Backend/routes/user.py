@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models import User
+from app.models import User,Product
 from utils.email_utils import send_welcome_email
 import bcrypt
 import re
+
+
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -357,10 +359,17 @@ def delete_seller(seller_id):
         if not seller:
             return jsonify({"error": "Seller not found"}), 404
 
+        # Delete all products posted by this seller
+        Product.query.filter_by(seller_id=seller_id).delete(synchronize_session=False)
         db.session.delete(seller)
         db.session.commit()
 
-        return jsonify({"message": "Seller deleted successfully"}), 200
+        # Optional: Clean up products from any other deleted sellers
+        active_seller_ids = [s.id for s in User.query.filter_by(account_type="seller").all()]
+        Product.query.filter(~Product.seller_id.in_(active_seller_ids)).delete(synchronize_session=False)
+        db.session.commit()
+
+        return jsonify({"message": "Seller and their products deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
@@ -408,3 +417,18 @@ def approve_seller(seller_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@auth_bp.route('/admin/cleanup-orphan-products', methods=['POST'])
+def cleanup_orphan_products():
+    try:
+        if not session.get('is_admin'):
+            return jsonify({"error": "Admin access required"}), 403
+
+        active_seller_ids = [s.id for s in User.query.filter_by(account_type="seller").all()]
+        deleted_count = Product.query.filter(~Product.seller_id.in_(active_seller_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"message": f"Removed {deleted_count} orphan products from deleted sellers."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    

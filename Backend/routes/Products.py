@@ -3,7 +3,7 @@ import uuid
 from werkzeug.utils import secure_filename
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models import Product
+from app.models import Product, User
 
 products_bp = Blueprint('products', __name__)
 
@@ -45,7 +45,6 @@ def products():
             seller_role = session.get('account_type')
             seller_status = session.get('status')
             # Fetch user from DB to check status if not in session
-            from app.models import User
             user = User.query.get(seller_id) if seller_id else None
             if not seller_id or seller_role != "seller" or not user or user.status != 'active':
                 return jsonify({"error": "Unauthorized - Seller login required or account not active"}), 401
