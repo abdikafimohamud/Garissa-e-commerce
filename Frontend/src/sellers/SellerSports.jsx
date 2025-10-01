@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const SellerSports = () => {
   const [sports, setSports] = useState([]);
@@ -16,24 +17,35 @@ const SellerSports = () => {
     isBestSeller: false,
     imageUrl: "",
     description: "",
-    releaseDate: new Date().toISOString().split('T')[0]
+    releaseDate: new Date().toISOString().split("T")[0],
   });
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const API_URL = "http://localhost:5000/api/products";
 
-  useEffect(() => {
-    fetchSports();
-  }, []);
+  // ✅ Use the auth context to check authentication
+  const { isAuthenticated, user } = useAuth();
 
   const fetchSports = async () => {
     try {
+      // ✅ Check if user is authenticated and is a seller
+      if (!isAuthenticated || user?.account_type !== 'seller') {
+        console.error("User not authenticated as seller");
+        setError("Please login as a seller to manage products");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
+      setError(null);
       const res = await fetch(API_URL, {
         credentials: "include",
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized - Please login as seller");
+        }
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
@@ -49,20 +61,20 @@ const SellerSports = () => {
         products = data.products;
       } else if (data && Array.isArray(data.items)) {
         products = data.items;
-      } else if (data && typeof data === 'object') {
+      } else if (data && typeof data === "object") {
         products = [data];
       } else {
         throw new Error("Unexpected API response format");
       }
 
       // Filter products to only include sports category
-      const sportsProducts = products.filter(product =>
-        product.category && product.category.toLowerCase() === "sports"
+      const sportsProducts = products.filter(
+        (product) =>
+          product.category && product.category.toLowerCase() === "sports"
       );
 
       setSports(sportsProducts);
       setError(null);
-
     } catch (error) {
       console.error("Error fetching sports:", error);
       setError(error.message);
@@ -71,6 +83,14 @@ const SellerSports = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.account_type === 'seller') {
+      fetchSports();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -82,15 +102,32 @@ const SellerSports = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ Check authentication before submitting
+    if (!isAuthenticated || user?.account_type !== 'seller') {
+      setError("Please login as a seller to manage products");
+      return;
+    }
+
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `${API_URL}/${editingId}` : API_URL;
 
     try {
+      setLoading(true);
+
       const productData = {
-        ...formData,
+        name: formData.name,
         price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        brand: formData.brand,
         stock: parseInt(formData.stock),
-        rating: parseFloat(formData.rating)
+        rating: parseFloat(formData.rating),
+        isNew: formData.isNew,
+        isBestSeller: formData.isBestSeller,
+        imageUrl: formData.imageUrl,
+        releaseDate: formData.releaseDate
       };
 
       const res = await fetch(url, {
@@ -100,16 +137,22 @@ const SellerSports = () => {
         body: JSON.stringify(productData),
       });
 
-      if (res.ok) {
-        fetchSports();
-        resetForm();
-        setError(null);
-      } else {
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized - Please login again");
+        }
         throw new Error(`Failed to save: ${res.status}`);
       }
+
+      await res.json();
+      fetchSports();
+      resetForm();
+      setError(null);
     } catch (error) {
       console.error("Error saving sports item:", error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,28 +169,43 @@ const SellerSports = () => {
       isBestSeller: item.isBestSeller || item.is_best_seller || false,
       imageUrl: item.imageUrl || item.image_url || "",
       description: item.description || "",
-      releaseDate: item.releaseDate || new Date().toISOString().split('T')[0]
+      releaseDate: item.releaseDate || new Date().toISOString().split("T")[0],
     });
-    setEditingId(item._id || item.id);
+    setEditingId(item.id || item._id);
   };
 
   const handleDelete = async (id) => {
+    // ✅ Check authentication before deleting
+    if (!isAuthenticated || user?.account_type !== 'seller') {
+      setError("Please login as a seller to manage products");
+      return;
+    }
+
     if (!window.confirm("Delete this sports item?")) return;
 
     try {
+      setLoading(true);
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (res.ok) {
-        setSports((prev) => prev.filter((item) => (item._id || item.id) !== id));
-        setError(null);
-      } else {
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized - Please login again");
+        }
         throw new Error(`Failed to delete: ${res.status}`);
       }
+      
+      setSports((prev) =>
+        prev.filter((item) => (item.id || item._id) !== id)
+      );
+      setError(null);
     } catch (error) {
       console.error("Error deleting sports item:", error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -164,24 +222,46 @@ const SellerSports = () => {
       isBestSeller: false,
       imageUrl: "",
       description: "",
-      releaseDate: new Date().toISOString().split('T')[0]
+      releaseDate: new Date().toISOString().split("T")[0],
     });
     setEditingId(null);
   };
 
-  const filteredProducts = sports.filter(product =>
-    (product.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (product.brand?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (product.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredProducts = sports.filter(
+    (product) =>
+      product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const categories = [
-    { id: 'T-shirts', name: 'T-shirts' },
-    { id: 'Football', name: 'Football' },
-    { id: 'Shoes', name: 'Shoes' }
+    { id: "T-shirts", name: "T-shirts" },
+    { id: "Football", name: "Football" },
+    { id: "Shoes", name: "Shoes" },
   ];
 
-  if (loading) {
+  // Function to get image URL from product object
+  const getProductImageUrl = (product) => {
+    return product.imageUrl || product.image_url || "/default-image.jpg";
+  };
+
+  // Show authentication message if user is not logged in as seller
+  if (!isAuthenticated || user?.account_type !== 'seller') {
+    return (
+      <div className="p-6">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold text-red-600 mb-4">
+            Please login as a seller to access this page
+          </h2>
+          <p className="text-gray-600">
+            You need to be logged in with a seller account to manage sports products.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && sports.length === 0) {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
@@ -199,7 +279,8 @@ const SellerSports = () => {
       {/* Error message */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <strong>Error: </strong>{error}
+          <strong>Error: </strong>
+          {error}
           <button
             onClick={() => setError(null)}
             className="ml-4 text-red-800 font-bold"
@@ -217,7 +298,7 @@ const SellerSports = () => {
         <h2 className="text-xl font-semibold mb-4">
           {editingId ? "Edit Sports Product" : "Add New Sports Product"}
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Product Name */}
           <div>
@@ -229,6 +310,7 @@ const SellerSports = () => {
               onChange={handleChange}
               className="w-full border p-2 rounded"
               required
+              disabled={loading}
             />
           </div>
 
@@ -242,6 +324,7 @@ const SellerSports = () => {
               onChange={handleChange}
               className="w-full border p-2 rounded"
               required
+              disabled={loading}
             />
           </div>
 
@@ -257,6 +340,7 @@ const SellerSports = () => {
               min="0"
               step="0.01"
               required
+              disabled={loading}
             />
           </div>
 
@@ -271,6 +355,7 @@ const SellerSports = () => {
               className="w-full border p-2 rounded"
               min="0"
               required
+              disabled={loading}
             />
           </div>
 
@@ -283,6 +368,7 @@ const SellerSports = () => {
               value={formData.category}
               readOnly
               className="w-full border p-2 rounded bg-gray-100"
+              disabled={loading}
             />
           </div>
 
@@ -295,9 +381,12 @@ const SellerSports = () => {
               onChange={handleChange}
               className="w-full border p-2 rounded"
               required
+              disabled={loading}
             >
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
               ))}
             </select>
           </div>
@@ -314,6 +403,7 @@ const SellerSports = () => {
               value={formData.rating}
               onChange={handleChange}
               className="w-full border p-2 rounded"
+              disabled={loading}
             />
           </div>
 
@@ -326,6 +416,7 @@ const SellerSports = () => {
               value={formData.releaseDate}
               onChange={handleChange}
               className="w-full border p-2 rounded"
+              disabled={loading}
             />
           </div>
 
@@ -338,6 +429,7 @@ const SellerSports = () => {
                 checked={formData.isNew}
                 onChange={handleChange}
                 className="mr-2"
+                disabled={loading}
               />
               <span className="text-gray-700">New Product</span>
             </label>
@@ -348,6 +440,7 @@ const SellerSports = () => {
                 checked={formData.isBestSeller}
                 onChange={handleChange}
                 className="mr-2"
+                disabled={loading}
               />
               <span className="text-gray-700">Best Seller</span>
             </label>
@@ -364,15 +457,14 @@ const SellerSports = () => {
               className="w-full border p-2 rounded"
               placeholder="https://example.com/image.jpg"
               required
+              disabled={loading}
             />
           </div>
 
           {/* Image Preview */}
           {formData.imageUrl && (
             <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">
-                Image Preview
-              </label>
+              <label className="block text-gray-700 mb-2">Image Preview</label>
               <img
                 src={formData.imageUrl}
                 alt="Preview"
@@ -394,6 +486,7 @@ const SellerSports = () => {
               className="w-full border p-2 rounded"
               rows={3}
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -401,15 +494,17 @@ const SellerSports = () => {
         <div className="flex justify-end space-x-3 mt-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={loading}
           >
-            {editingId ? "Update Product" : "Add Product"}
+            {loading ? "Processing..." : (editingId ? "Update Product" : "Add Product")}
           </button>
           {editingId && (
             <button
               type="button"
               onClick={resetForm}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
+              disabled={loading}
             >
               Cancel
             </button>
@@ -430,34 +525,59 @@ const SellerSports = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full p-2 border rounded"
+              disabled={loading}
             />
           </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">No sports products found</p>
+        {loading && sports.length === 0 ? (
+          <div className="text-center py-4">
+            <p>Loading products...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">
+            No sports products found
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Brand
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Stock
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rating
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProducts.map((item) => (
-                  <tr key={item._id || item.id} className="hover:bg-gray-50">
+                  <tr key={item.id || item._id} className="hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <img
-                        src={item.imageUrl || item.image_url}
+                        src={getProductImageUrl(item)}
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded"
                         onError={(e) => {
@@ -465,22 +585,40 @@ const SellerSports = () => {
                         }}
                       />
                     </td>
-                    <td className="py-4 px-4 text-sm font-medium text-gray-900">{item.name}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500">{item.brand}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500 capitalize">{item.subcategory}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500">${item.price}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500">{item.stock}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500">{item.rating || 0}</td>
+                    <td className="py-4 px-4 text-sm font-medium text-gray-900">
+                      {item.name}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-500">
+                      {item.brand}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-500 capitalize">
+                      {item.subcategory}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-500">
+                      ${item.price}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-500">
+                      {item.stock}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-500">
+                      {item.rating || 0}
+                    </td>
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1">
                         {item.isNew && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">New</span>
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                            New
+                          </span>
                         )}
                         {item.isBestSeller && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Bestseller</span>
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                            Bestseller
+                          </span>
                         )}
                         {item.stock <= 0 && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Out of Stock</span>
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                            Out of Stock
+                          </span>
                         )}
                       </div>
                     </td>
@@ -488,13 +626,15 @@ const SellerSports = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
+                          disabled={loading}
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(item._id || item.id)}
-                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDelete(item.id || item._id)}
+                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                          disabled={loading}
                         >
                           Delete
                         </button>
