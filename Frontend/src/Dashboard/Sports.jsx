@@ -45,20 +45,14 @@ const Sports = ({ addToCart }) => {
     if (!subCategory) return null;
     const normalized = subCategory.trim().toLowerCase();
 
-    if (
-      normalized.includes("t-shirt") ||
-      normalized.includes("shirt") ||
-      normalized.includes("tshirt")
-    )
-      return "t-shirt";
-    if (
-      normalized.includes("shoes") ||
-      normalized.includes("sneaker") ||
-      normalized.includes("footwear")
-    )
-      return "shoes";
-    if (normalized.includes("football") || normalized.includes("soccer"))
-      return "football";
+    // Shoes: match shoes, shoe, sneakers, sneaker, footwear
+    if (/shoe|shoes|sneaker|sneakers|footwear/.test(normalized)) return "shoes";
+
+    // T-Shirts: match t-shirt, tshirt, shirt
+    if (/t-shirt|tshirt|shirt/.test(normalized)) return "t-shirt";
+
+    // Football: match football, soccer
+    if (/football|soccer/.test(normalized)) return "football";
 
     return normalized;
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const SellerElectronics = () => {
@@ -28,10 +28,10 @@ const SellerElectronics = () => {
   const { isAuthenticated, user } = useAuth();
 
   // Fetch products
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       // ✅ Check if user is authenticated and is a seller
-      if (!isAuthenticated || user?.account_type !== 'seller') {
+      if (!isAuthenticated || user?.account_type !== "seller") {
         console.error("User not authenticated as seller");
         setError("Please login as a seller to manage products");
         setLoading(false);
@@ -40,36 +40,43 @@ const SellerElectronics = () => {
 
       setLoading(true);
       setError(null);
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_URL}?category=electronics`, {
         credentials: "include",
       });
-      
+
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error("Unauthorized - Please login as seller");
         }
         throw new Error("Failed to fetch products");
       }
-      
+
       const data = await res.json();
       let electronicsData = [];
-
       if (Array.isArray(data)) {
         electronicsData = data.filter(
           (p) =>
             p.category?.toLowerCase() === "electronics" ||
-            (p.subcategory &&
+            (p.subcategory?.toLowerCase &&
               ["smartphone", "laptop", "television", "audio"].includes(
-                p.subcategory.toLowerCase()
+                p.subcategory?.toLowerCase()
+              )) ||
+            (p.subCategory?.toLowerCase &&
+              ["smartphone", "laptop", "television", "audio"].includes(
+                p.subCategory?.toLowerCase()
               ))
         );
       } else if (data.products && Array.isArray(data.products)) {
         electronicsData = data.products.filter(
           (p) =>
             p.category?.toLowerCase() === "electronics" ||
-            (p.subcategory &&
+            (p.subcategory?.toLowerCase &&
               ["smartphone", "laptop", "television", "audio"].includes(
-                p.subcategory.toLowerCase()
+                p.subcategory?.toLowerCase()
+              )) ||
+            (p.subCategory?.toLowerCase &&
+              ["smartphone", "laptop", "television", "audio"].includes(
+                p.subCategory?.toLowerCase()
               ))
         );
       }
@@ -82,15 +89,15 @@ const SellerElectronics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.account_type === 'seller') {
+    if (isAuthenticated && user?.account_type === "seller") {
       fetchProducts();
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, fetchProducts]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -104,14 +111,14 @@ const SellerElectronics = () => {
     e.preventDefault();
 
     // ✅ Check authentication before submitting
-    if (!isAuthenticated || user?.account_type !== 'seller') {
+    if (!isAuthenticated || user?.account_type !== "seller") {
       setError("Please login as a seller to manage products");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
@@ -124,12 +131,12 @@ const SellerElectronics = () => {
         isNew: formData.isNew,
         isBestSeller: formData.isBestSeller,
         imageUrl: formData.imageUrl,
-        releaseDate: formData.releaseDate
+        releaseDate: formData.releaseDate,
       };
 
       let url = API_URL;
       let method = "POST";
-      
+
       if (editingId) {
         url = `${API_URL}/${editingId}`;
         method = "PUT";
@@ -141,7 +148,7 @@ const SellerElectronics = () => {
         credentials: "include",
         body: JSON.stringify(productData),
       });
-      
+
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error("Unauthorized - Please login again");
@@ -151,7 +158,7 @@ const SellerElectronics = () => {
         );
       }
 
-      const result = await res.json();
+      await res.json(); // Remove unused 'result' variable
 
       // Refresh product list
       fetchProducts();
@@ -188,28 +195,28 @@ const SellerElectronics = () => {
 
   const handleDelete = async (id) => {
     // ✅ Check authentication before deleting
-    if (!isAuthenticated || user?.account_type !== 'seller') {
+    if (!isAuthenticated || user?.account_type !== "seller") {
       setError("Please login as a seller to manage products");
       return;
     }
 
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
-    
+
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      
+
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error("Unauthorized - Please login again");
         }
         throw new Error("Failed to delete product");
       }
-      
+
       // Refresh product list
       fetchProducts();
       setError(null);
@@ -261,7 +268,7 @@ const SellerElectronics = () => {
   };
 
   // Show authentication message if user is not logged in as seller
-  if (!isAuthenticated || user?.account_type !== 'seller') {
+  if (!isAuthenticated || user?.account_type !== "seller") {
     return (
       <div className="p-6">
         <div className="text-center py-8">
@@ -269,7 +276,8 @@ const SellerElectronics = () => {
             Please login as a seller to access this page
           </h2>
           <p className="text-gray-600">
-            You need to be logged in with a seller account to manage electronics products.
+            You need to be logged in with a seller account to manage electronics
+            products.
           </p>
         </div>
       </div>
@@ -500,7 +508,11 @@ const SellerElectronics = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? "Processing..." : (editingId ? "Update Product" : "Add Product")}
+                {loading
+                  ? "Processing..."
+                  : editingId
+                  ? "Update Product"
+                  : "Add Product"}
               </button>
             </div>
           </div>

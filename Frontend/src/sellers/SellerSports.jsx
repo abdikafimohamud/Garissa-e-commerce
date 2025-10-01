@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const SellerSports = () => {
@@ -26,10 +26,10 @@ const SellerSports = () => {
   // ✅ Use the auth context to check authentication
   const { isAuthenticated, user } = useAuth();
 
-  const fetchSports = async () => {
+  const fetchSports = useCallback(async () => {
     try {
       // ✅ Check if user is authenticated and is a seller
-      if (!isAuthenticated || user?.account_type !== 'seller') {
+      if (!isAuthenticated || user?.account_type !== "seller") {
         console.error("User not authenticated as seller");
         setError("Please login as a seller to manage products");
         setLoading(false);
@@ -38,7 +38,7 @@ const SellerSports = () => {
 
       setLoading(true);
       setError(null);
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_URL}?category=sports`, {
         credentials: "include",
       });
 
@@ -70,7 +70,15 @@ const SellerSports = () => {
       // Filter products to only include sports category
       const sportsProducts = products.filter(
         (product) =>
-          product.category && product.category.toLowerCase() === "sports"
+          product.category?.toLowerCase() === "sports" ||
+          (product.subcategory?.toLowerCase &&
+            ["t-shirts", "football", "shoes"].includes(
+              product.subcategory?.toLowerCase()
+            )) ||
+          (product.subCategory?.toLowerCase &&
+            ["t-shirts", "football", "shoes"].includes(
+              product.subCategory?.toLowerCase()
+            ))
       );
 
       setSports(sportsProducts);
@@ -82,15 +90,15 @@ const SellerSports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.account_type === 'seller') {
+    if (isAuthenticated && user?.account_type === "seller") {
       fetchSports();
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, fetchSports]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -104,7 +112,7 @@ const SellerSports = () => {
     e.preventDefault();
 
     // ✅ Check authentication before submitting
-    if (!isAuthenticated || user?.account_type !== 'seller') {
+    if (!isAuthenticated || user?.account_type !== "seller") {
       setError("Please login as a seller to manage products");
       return;
     }
@@ -127,7 +135,7 @@ const SellerSports = () => {
         isNew: formData.isNew,
         isBestSeller: formData.isBestSeller,
         imageUrl: formData.imageUrl,
-        releaseDate: formData.releaseDate
+        releaseDate: formData.releaseDate,
       };
 
       const res = await fetch(url, {
@@ -176,7 +184,7 @@ const SellerSports = () => {
 
   const handleDelete = async (id) => {
     // ✅ Check authentication before deleting
-    if (!isAuthenticated || user?.account_type !== 'seller') {
+    if (!isAuthenticated || user?.account_type !== "seller") {
       setError("Please login as a seller to manage products");
       return;
     }
@@ -189,17 +197,15 @@ const SellerSports = () => {
         method: "DELETE",
         credentials: "include",
       });
-      
+
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error("Unauthorized - Please login again");
         }
         throw new Error(`Failed to delete: ${res.status}`);
       }
-      
-      setSports((prev) =>
-        prev.filter((item) => (item.id || item._id) !== id)
-      );
+
+      setSports((prev) => prev.filter((item) => (item.id || item._id) !== id));
       setError(null);
     } catch (error) {
       console.error("Error deleting sports item:", error);
@@ -246,7 +252,7 @@ const SellerSports = () => {
   };
 
   // Show authentication message if user is not logged in as seller
-  if (!isAuthenticated || user?.account_type !== 'seller') {
+  if (!isAuthenticated || user?.account_type !== "seller") {
     return (
       <div className="p-6">
         <div className="text-center py-8">
@@ -254,7 +260,8 @@ const SellerSports = () => {
             Please login as a seller to access this page
           </h2>
           <p className="text-gray-600">
-            You need to be logged in with a seller account to manage sports products.
+            You need to be logged in with a seller account to manage sports
+            products.
           </p>
         </div>
       </div>
@@ -497,7 +504,11 @@ const SellerSports = () => {
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? "Processing..." : (editingId ? "Update Product" : "Add Product")}
+            {loading
+              ? "Processing..."
+              : editingId
+              ? "Update Product"
+              : "Add Product"}
           </button>
           {editingId && (
             <button

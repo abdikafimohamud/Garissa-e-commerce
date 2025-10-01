@@ -40,21 +40,24 @@ const AdminLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Login successful
         setUser(data.user);
         setIsAuthenticated(true);
-        // Force session check to sync AuthContext with backend session
         if (typeof checkAuthStatus === "function") {
           await checkAuthStatus();
         }
-        // Wait for AuthContext to update and confirm admin
         setTimeout(() => {
           if (
             data.user &&
             data.user.account_type === "admin" &&
             data.user.is_admin
           ) {
-            navigate("/admin/dashboard/dashboard-home");
+            // Use backend redirect if present
+            if (data.redirect) {
+              navigate(data.redirect);
+            } else {
+              // ✅ Corrected path to match your App.jsx routes
+              navigate("/admin/dashboard/dashboard-home");
+            }
           } else {
             setError("Not an admin account. Please use admin credentials.");
           }
