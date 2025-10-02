@@ -196,7 +196,7 @@ def login_admin():
         return jsonify({
             "message": "Admin login successful",
             "user": user.to_dict(),
-            "redirect": "/admin/dashboard-home"
+            "redirect": "/admin/dashboard/dashboard-home"
         }), 200
 
     except Exception as e:
