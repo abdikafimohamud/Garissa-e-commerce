@@ -118,9 +118,9 @@ function App() {
         <Route
           path="/Buyers"
           element={
-            <ProtectedRoute role="buyer">
+            // <ProtectedRoute role="buyer">
               <DashboardLayout />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<Navigate to="dashboard-home" replace />} />
@@ -158,9 +158,9 @@ function App() {
         <Route
           path="/seller"
           element={
-            <ProtectedRoute role="seller">
+            // <ProtectedRoute role="seller">
               <SellerDashboardLayout />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<Navigate to="dashboard-home" replace />} />
