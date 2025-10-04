@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FaShoppingCart,
@@ -14,12 +14,32 @@ import { useAuth } from "../context/AuthContext";
 
 const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (isNotifDropdownOpen) {
+      setNotifLoading(true);
+      fetch("http://localhost:5000/api/notifications", {
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setNotifications(data.notifications || []);
+          setNotifLoading(false);
+        })
+        .catch(() => setNotifLoading(false));
+    }
+  }, [isNotifDropdownOpen]);
   const navigate = useNavigate();
   const authContext = useAuth();
 
   // Safety check for auth context
   if (!authContext) {
-    console.error("Header: AuthContext is undefined. Make sure Header is wrapped in AuthProvider.");
+    console.error(
+      "Header: AuthContext is undefined. Make sure Header is wrapped in AuthProvider."
+    );
     return (
       <header className="bg-gradient-to-r from-red-500 to-yellow-500 shadow-md py-4 px-6 flex justify-between items-center">
         <div className="text-white">Loading...</div>
@@ -42,8 +62,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
         // remove any stored auth info (token, user object, etc.)
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        if (logout) await logout();     // if logout() also does cleanup
-        if (setUser) setUser(null);     // make sure context is empty
+        if (logout) await logout(); // if logout() also does cleanup
+        if (setUser) setUser(null); // make sure context is empty
 
         setIsUserDropdownOpen(false);
         navigate("/login");
@@ -66,10 +86,7 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
       {/* Left section: Logo and title */}
       <div className="flex items-center">
         {/* Sidebar toggle for mobile */}
-        <button
-          className="md:hidden mr-4 text-white"
-          onClick={onToggleSidebar}
-        >
+        <button className="md:hidden mr-4 text-white" onClick={onToggleSidebar}>
           <FaBars className="text-xl" />
         </button>
 
@@ -83,8 +100,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
             {userType === "seller"
               ? "Seller Dashboard"
               : userType === "admin"
-                ? "Admin Dashboard"
-                : "Dashboard"}
+              ? "Admin Dashboard"
+              : "Dashboard"}
           </h1>
         </div>
       </div>
@@ -99,12 +116,48 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
         )}
 
         {/* Notification Icon */}
-        <button className="relative p-2 text-white hover:text-gray-100 transition-colors">
-          <FaBell className="text-xl" />
-          <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            3
-          </span>
-        </button>
+        <div className="relative">
+          <button
+            className="relative p-2 text-white hover:text-gray-100 transition-colors"
+            onClick={() => setIsNotifDropdownOpen((open) => !open)}
+          >
+            <FaBell className="text-xl" />
+            <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+              {notifications.filter((n) => !n.read).length}
+            </span>
+          </button>
+          {isNotifDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-2 z-50 border border-gray-200">
+              <div className="px-4 py-2 border-b border-gray-100 font-bold text-gray-800">
+                Notifications
+              </div>
+              {notifLoading ? (
+                <div className="px-4 py-4 text-gray-500">Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div className="px-4 py-4 text-gray-500">No notifications</div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`px-4 py-3 border-b border-gray-100 ${
+                      notif.read ? "bg-gray-50" : "bg-yellow-50"
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">
+                      {notif.title}
+                    </div>
+                    <div className="text-sm text-gray-700 mb-1">
+                      {notif.message}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(notif.date).toLocaleString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Cart Icon - Buyers only */}
         {userType === "buyer" && (
@@ -114,8 +167,11 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
           >
             <FaShoppingCart className="text-xl" />
             {Array.isArray(cartItems) && cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItems.length}
+              <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {cartItems.reduce(
+                  (count, item) => count + (item.quantity || 1),
+                  0
+                )}
               </span>
             )}
           </Link>
@@ -149,8 +205,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
                   userType === "seller"
                     ? "/seller/profile-settings"
                     : userType === "admin"
-                      ? "/admin/profile"
-                      : "/Buyers/Profilee"
+                    ? "/admin/profile"
+                    : "/Buyers/Profilee"
                 }
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsUserDropdownOpen(false)}
@@ -164,8 +220,8 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
                   userType === "seller"
                     ? "/seller/profile-settings"
                     : userType === "admin"
-                      ? "/admin/settings"
-                      : "/Buyers/settings"
+                    ? "/admin/settings"
+                    : "/Buyers/settings"
                 }
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsUserDropdownOpen(false)}
