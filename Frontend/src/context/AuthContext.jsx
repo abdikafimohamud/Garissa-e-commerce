@@ -1,10 +1,5 @@
 // src/context/AuthContext.jsx
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-} from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 export const AuthContext = createContext();
 
@@ -23,8 +18,15 @@ export const AuthProvider = ({ children }) => {
         credentials: "include", // <— send/receive cookies
       });
 
+      let data;
       if (res.ok) {
-        const data = await res.json();
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          throw new Error(
+            `Auth check response is not valid JSON: ${jsonErr.message}`
+          );
+        }
         if (data.authenticated && data.user) {
           setUser(data.user);
           setIsAuthenticated(true);
@@ -62,7 +64,15 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        return {
+          success: false,
+          message: `Login response is not valid JSON: ${jsonErr.message}`,
+        };
+      }
 
       if (res.ok) {
         setUser(data.user);
@@ -88,7 +98,15 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
         return { success: true };
       }
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        return {
+          success: false,
+          message: `Logout response is not valid JSON: ${jsonErr.message}`,
+        };
+      }
       return { success: false, message: data.error || "Logout failed" };
     } catch (err) {
       console.error("Logout error:", err);
@@ -102,7 +120,14 @@ export const AuthProvider = ({ children }) => {
       const res = await fetch(`${API_URL}/profile`, {
         credentials: "include",
       });
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch  {
+        setUser(null);
+        setIsAuthenticated(false);
+        return false;
+      }
       if (res.ok && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);

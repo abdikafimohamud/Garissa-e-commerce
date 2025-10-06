@@ -23,7 +23,12 @@ const Clothes = ({ addToCart }) => {
           "http://localhost:5000/api/products/public?category=clothes"
         );
         if (!res.ok) throw new Error("Failed to fetch clothes");
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch  {
+          throw new Error("Response is not valid JSON");
+        }
 
         // The public API returns products in a structured format
         const clothesProducts = data.products || [];
@@ -31,7 +36,9 @@ const Clothes = ({ addToCart }) => {
         setError(null);
       } catch (err) {
         console.error(err);
-        setError("Failed to load products. Please try again later.");
+        setError(
+          err.message || "Failed to load products. Please try again later."
+        );
         setClothes([]);
       } finally {
         setLoading(false);

@@ -1,21 +1,21 @@
 // src/layouts/DashboardLayout.jsx
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import UserSidebar from "../components/UserSidebar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { AuthContext } from "../context/AuthContext"; // If you have a cart context
 
-const DashboardLayout = () => {
+const DashboardLayout = ({ cartItems = [], setCartItems }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { cartItems } = useContext(AuthContext); // Get cart items from context if available
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Fixed Header - Using the DashboardHeader component */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
-        <Header 
-          cartItems={cartItems || []} // Pass actual cart items
+        <Header
+          cartItems={cartItems}
+          setCartItems={setCartItems}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           userType="buyer"
         />
@@ -33,9 +33,11 @@ const DashboardLayout = () => {
         </aside>
 
         {/* Scrollable Main Content */}
-        <main className={`flex-1 p-8 overflow-y-auto transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-64" : "ml-0"
-        }`}>
+        <main
+          className={`flex-1 p-8 overflow-y-auto transition-all duration-300 ${
+            isSidebarOpen ? "lg:ml-64" : "ml-0"
+          }`}
+        >
           {/* Mobile Sidebar Toggle */}
           {!isSidebarOpen && (
             <button

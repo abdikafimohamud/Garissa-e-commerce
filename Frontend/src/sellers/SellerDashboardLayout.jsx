@@ -5,13 +5,15 @@ import SellerSidebar from "../components/SellerSidebar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
-const SellerDashboardLayout = () => {
+const SellerDashboardLayout = ({ cartItems = [], setCartItems }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
     <div className="flex flex-col min-h-screen">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
-        <Header         
+        <Header
+          cartItems={cartItems}
+          setCartItems={setCartItems}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           userType="seller"
         />

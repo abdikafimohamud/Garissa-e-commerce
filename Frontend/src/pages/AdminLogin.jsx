@@ -37,7 +37,12 @@ const AdminLogin = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Login response is not valid JSON: ${jsonErr.message}`);
+      }
 
       if (response.ok) {
         setUser(data.user);

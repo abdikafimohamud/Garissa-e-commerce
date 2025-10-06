@@ -11,7 +11,9 @@ export default function SellerOrders() {
     fetch("/api/seller/orders", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch orders");
-        return res.json();
+        return res.json().catch((jsonErr) => {
+          throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
+        });
       })
       .then((data) => {
         setOrders(data);
@@ -32,12 +34,16 @@ export default function SellerOrders() {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to update order status");
-        return res.json();
+        return res.json().catch((jsonErr) => {
+          throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
+        });
       })
       .then((updatedOrder) => {
         setOrders((orders) =>
           orders.map((order) =>
-            order.id === updatedOrder.id ? { ...order, status: updatedOrder.status } : order
+            order.id === updatedOrder.id
+              ? { ...order, status: updatedOrder.status }
+              : order
           )
         );
       })
@@ -91,7 +97,8 @@ export default function SellerOrders() {
                   {order.items && order.items.length > 0
                     ? order.items.map((item) => (
                         <div key={item.id}>
-                          {item.product_name || item.product_id} (Qty: {item.quantity})
+                          {item.product_name || item.product_id} (Qty:{" "}
+                          {item.quantity})
                         </div>
                       ))
                     : "—"}

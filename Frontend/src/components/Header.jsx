@@ -17,14 +17,37 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
-  // Fetch notifications when dropdown opens
+  // Fetch notifications on page load and when dropdown opens
+  useEffect(() => {
+    setNotifLoading(true);
+    fetch("http://localhost:5000/api/notifications", {
+      credentials: "include",
+    })
+      .then((res) =>
+        res.json().catch((jsonErr) => {
+          setNotifLoading(false);
+          throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
+        })
+      )
+      .then((data) => {
+        setNotifications(data.notifications || []);
+        setNotifLoading(false);
+      })
+      .catch(() => setNotifLoading(false));
+  }, []);
+
   useEffect(() => {
     if (isNotifDropdownOpen) {
       setNotifLoading(true);
       fetch("http://localhost:5000/api/notifications", {
         credentials: "include",
       })
-        .then((res) => res.json())
+        .then((res) =>
+          res.json().catch((jsonErr) => {
+            setNotifLoading(false);
+            throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
+          })
+        )
         .then((data) => {
           setNotifications(data.notifications || []);
           setNotifLoading(false);
@@ -56,7 +79,14 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
         method: "POST",
         credentials: "include", // send/clear cookie session
       });
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonErr) {
+        throw new Error(
+          `Logout response is not valid JSON: ${jsonErr.message}`
+        );
+      }
 
       if (response.ok && result.success !== false) {
         // remove any stored auth info (token, user object, etc.)
@@ -166,14 +196,14 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
             className="relative p-2 text-white hover:text-gray-100 transition-colors"
           >
             <FaShoppingCart className="text-xl" />
-            {Array.isArray(cartItems) && cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                {cartItems.reduce(
-                  (count, item) => count + (item.quantity || 1),
-                  0
-                )}
-              </span>
-            )}
+            <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+              {Array.isArray(cartItems)
+                ? cartItems.reduce(
+                    (count, item) => count + (item.quantity || 1),
+                    0
+                  )
+                : 0}
+            </span>
           </Link>
         )}
 

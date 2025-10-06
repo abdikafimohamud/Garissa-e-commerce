@@ -21,7 +21,12 @@ const Sports = ({ addToCart }) => {
           "http://localhost:5000/api/products/public?category=sports"
         );
         if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch  {
+          throw new Error("Response is not valid JSON");
+        }
 
         const sportsData = data.products || [];
         setSportsProducts(sportsData);

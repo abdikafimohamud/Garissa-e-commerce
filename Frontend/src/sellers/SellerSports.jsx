@@ -49,7 +49,12 @@ const SellerSports = () => {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
+      }
       console.log("API Response:", data);
 
       // Handle different response formats and filter for sports products
