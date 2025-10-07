@@ -56,7 +56,8 @@ def create_app():
     from routes.notifications import notifications_bp
     from routes.admin_routes import admin_bp
     from routes.admin_seller_routes import admin_seller_bp
-    from routes.Orders import orders_bp
+    from routes.seller_orders import seller_orders_bp
+
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(products_bp)
@@ -64,7 +65,8 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(admin_seller_bp, url_prefix="/admin_sellers")
-    app.register_blueprint(orders_bp)
+    app.register_blueprint(seller_orders_bp)
+    
 
     return app
 

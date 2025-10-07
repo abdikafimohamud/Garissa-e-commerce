@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models import Order, OrderItem, Address, Payment, User, Product
+from app.models import Order, OrderItem, Address, Payment, User, Product, Notification
 from datetime import datetime
 import random
 import string
@@ -104,6 +104,25 @@ def create_order():
         
         # Commit all changes
         db.session.commit()
+        
+        # Create notifications for sellers
+        sellers_notified = set()  # Track unique sellers to avoid duplicate notifications
+        buyer = User.query.get(current_user_id)
+        
+        for item_data in data['items']:
+            product = Product.query.get(item_data['id'])
+            if product and product.seller_id not in sellers_notified:
+                notification = Notification(
+                    title="New Order Received!",
+                    message=f"You have a new order from {buyer.firstname} {buyer.secondname}. Order #{order.order_number} contains your product '{product.name}'. Please check your orders dashboard to manage this order.",
+                    type="order",
+                    sender_role="system",
+                    target_user=product.seller_id,
+                    date=datetime.utcnow(),
+                    read=False
+                )
+                db.session.add(notification)
+                sellers_notified.add(product.seller_id)
         
         # Simulate payment processing
         payment.status = 'completed'

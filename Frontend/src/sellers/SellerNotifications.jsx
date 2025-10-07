@@ -1,150 +1,205 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { FiBell, FiCheck, FiClock, FiAlertCircle } from 'react-icons/fi';
 
-const BuyerNotifications = () => {
+export default function SellerNotifications() {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // API base URL - adjust this to match your Flask server
-  const API_BASE_URL = 'http://localhost:5000';
-
-  // Fetch notifications
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   const fetchNotifications = async () => {
-    setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications`, {
-        credentials: "include", // Include cookies for session authentication
+      setLoading(true);
+      const response = await axios.get(`${baseURL}/seller/notifications`, {
+        withCredentials: true
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      // Ensure we're working with an array
-      const notificationsData = Array.isArray(data) ? data : [];
-      setNotifications(notificationsData);
+      
+      setNotifications(response.data.notifications);
+      setUnreadCount(response.data.notifications.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      alert('Failed to fetch notifications');
-      setNotifications([]); // Set to empty array on error
+      toast.error('Failed to fetch notifications');
     } finally {
       setLoading(false);
     }
   };
 
-  const markAsRead = async (id) => {
+  const markAsRead = async (notificationId) => {
     try {
-      // Update the read status on the server
-      const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: "include", // Include cookies for session authentication
-        body: JSON.stringify({ read: true })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Update the local state
-      setNotifications(notifications.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
-      ));
+      await axios.patch(
+        `${baseURL}/seller/notifications/${notificationId}/read`,
+        {},
+        { withCredentials: true }
+      );
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, read: true }
+            : notif
+        )
+      );
+      
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      toast.success('Notification marked as read');
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      toast.error('Failed to mark notification as read');
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'order':
+        return <FiBell className="text-blue-500" />;
+      case 'warning':
+        return <FiAlertCircle className="text-yellow-500" />;
+      case 'success':
+        return <FiCheck className="text-green-500" />;
+      default:
+        return <FiBell className="text-gray-500" />;
     }
   };
 
   const getTypeColor = (type) => {
     switch (type) {
-      case 'info': return 'bg-blue-100 text-blue-800';
-      case 'warning': return 'bg-yellow-100 text-yellow-800';
-      case 'alert': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'order':
+        return 'border-l-blue-500 bg-blue-50';
+      case 'warning':
+        return 'border-l-yellow-500 bg-yellow-50';
+      case 'success':
+        return 'border-l-green-500 bg-green-50';
+      default:
+        return 'border-l-gray-500 bg-gray-50';
     }
   };
 
-  // Ensure filteredNotifications is always an array
-  const filteredNotifications = Array.isArray(notifications) ? notifications.filter(notif => {
-    if (filter === 'all') return true;
-    if (filter === 'read') return notif.read;
-    if (filter === 'unread') return !notif.read;
-    return true;
-  }) : [];
-
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Sellers Notifications</h1>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Notifications</h1>
+        <p className="text-gray-600">
+          Stay updated with your orders and important messages.
+        </p>
+      </div>
 
-      {/* Filter Controls */}
-      <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-        <div className="flex items-center">
-          <span className="mr-3 text-gray-700">Filter:</span>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('unread')}
-              className={`px-4 py-2 rounded-md ${filter === 'unread' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Unread
-            </button>
-            <button
-              onClick={() => setFilter('read')}
-              className={`px-4 py-2 rounded-md ${filter === 'read' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Read
-            </button>
+      {/* Notification Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center">
+            <FiBell className="text-2xl text-blue-500 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Total Notifications</h3>
+              <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center">
+            <FiClock className="text-2xl text-yellow-500 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Unread</h3>
+              <p className="text-2xl font-bold text-gray-900">{unreadCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center">
+            <FiCheck className="text-2xl text-green-500 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Read</h3>
+              <p className="text-2xl font-bold text-gray-900">{notifications.length - unreadCount}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Notifications List */}
-      <div>
-        {filteredNotifications.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No notifications found.</p>
+      <div className="bg-white shadow rounded-lg">
+        {notifications.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <FiBell className="text-6xl text-gray-300 mx-auto mb-4" />
+            <p className="text-xl font-medium mb-2">No notifications yet</p>
+            <p>You'll see notifications about new orders and updates here.</p>
+          </div>
         ) : (
-          <div className="space-y-4">
-            {filteredNotifications.map(notification => (
+          <div className="divide-y divide-gray-200">
+            {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`bg-white shadow-md rounded-lg p-4 ${!notification.read ? 'border-l-4 border-blue-500' : ''}`}
-                onClick={() => !notification.read && markAsRead(notification.id)}
+                className={`p-6 border-l-4 ${getTypeColor(notification.type)} ${
+                  !notification.read ? 'bg-white' : 'bg-gray-50'
+                }`}
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
-                        {notification.type}
-                      </span>
-                      <span className="ml-2 text-sm text-gray-500">
-                        {notification.date ? new Date(notification.date).toLocaleString() : 'No date'}
-                      </span>
-                      {!notification.read && (
-                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                          New
-                        </span>
-                      )}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 mt-1">
+                      {getTypeIcon(notification.type)}
                     </div>
-                    <h3 className="text-lg font-semibold">{notification.title}</h3>
-                    <p className="text-gray-700 mt-1">{notification.message}</p>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className={`text-lg font-semibold ${
+                          !notification.read ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
+                          {notification.title}
+                        </h3>
+                        {!notification.read && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            New
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className={`text-sm leading-relaxed ${
+                        !notification.read ? 'text-gray-700' : 'text-gray-500'
+                      }`}>
+                        {notification.message}
+                      </p>
+                      
+                      <p className="text-xs text-gray-400 mt-2">
+                        {formatDate(notification.date)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex-shrink-0">
+                    {!notification.read && (
+                      <button
+                        onClick={() => markAsRead(notification.id)}
+                        className="ml-4 px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                      >
+                        Mark as Read
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -152,8 +207,16 @@ const BuyerNotifications = () => {
           </div>
         )}
       </div>
+
+      {/* Refresh Button */}
+      <div className="mt-6 text-center">
+        <button
+          onClick={fetchNotifications}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Refresh Notifications
+        </button>
+      </div>
     </div>
   );
-};
-
-export default BuyerNotifications;
+}
