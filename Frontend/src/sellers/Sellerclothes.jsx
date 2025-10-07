@@ -37,7 +37,7 @@ const ClothesManagement = () => {
         setLoading(true);
         setError("");
 
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}/seller/clothes`, {
           credentials: "include",
         });
         
@@ -50,9 +50,8 @@ const ClothesManagement = () => {
         }
         
         const data = await response.json();
-        const clothesProducts = data.products ? 
-          data.products.filter((p) => p.category === "clothes") : 
-          data.filter((p) => p.category === "clothes");
+        // Products are already filtered by seller and clothes category from backend
+        const clothesProducts = data.products || data || [];
         setProducts(clothesProducts);
       } catch (error) {
         console.error("Error fetching products: ", error);

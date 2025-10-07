@@ -242,6 +242,119 @@ def get_public_products():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ✅ Seller-specific category endpoints
+@products_bp.route('/api/products/seller/sports', methods=['GET'])
+def get_seller_sports():
+    """
+    Get sports products for the current seller only.
+    """
+    try:
+        # Check authentication
+        seller_id = session.get('user_id')
+        seller_role = session.get('account_type')
+        
+        user = User.query.get(seller_id) if seller_id else None
+        if not seller_id or seller_role != "seller" or not user or user.status != 'active':
+            return jsonify({"error": "Unauthorized - Seller login required"}), 401
+
+        # Get seller's sports products only
+        products = Product.query.filter_by(
+            seller_id=seller_id, 
+            category='sports'
+        ).order_by(Product.created_at.desc()).all()
+        
+        return jsonify({
+            "products": [p.to_dict() for p in products],
+            "total": len(products)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@products_bp.route('/api/products/seller/clothes', methods=['GET'])
+def get_seller_clothes():
+    """
+    Get clothes products for the current seller only.
+    """
+    try:
+        # Check authentication
+        seller_id = session.get('user_id')
+        seller_role = session.get('account_type')
+        
+        user = User.query.get(seller_id) if seller_id else None
+        if not seller_id or seller_role != "seller" or not user or user.status != 'active':
+            return jsonify({"error": "Unauthorized - Seller login required"}), 401
+
+        # Get seller's clothes products only
+        products = Product.query.filter_by(
+            seller_id=seller_id, 
+            category='clothes'
+        ).order_by(Product.created_at.desc()).all()
+        
+        return jsonify({
+            "products": [p.to_dict() for p in products],
+            "total": len(products)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@products_bp.route('/api/products/seller/electronics', methods=['GET'])
+def get_seller_electronics():
+    """
+    Get electronics products for the current seller only.
+    """
+    try:
+        # Check authentication
+        seller_id = session.get('user_id')
+        seller_role = session.get('account_type')
+        
+        user = User.query.get(seller_id) if seller_id else None
+        if not seller_id or seller_role != "seller" or not user or user.status != 'active':
+            return jsonify({"error": "Unauthorized - Seller login required"}), 401
+
+        # Get seller's electronics products only
+        products = Product.query.filter_by(
+            seller_id=seller_id, 
+            category='electronics'
+        ).order_by(Product.created_at.desc()).all()
+        
+        return jsonify({
+            "products": [p.to_dict() for p in products],
+            "total": len(products)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@products_bp.route('/api/products/seller/cosmetics', methods=['GET'])
+def get_seller_cosmetics():
+    """
+    Get cosmetics products for the current seller only.
+    """
+    try:
+        # Check authentication
+        seller_id = session.get('user_id')
+        seller_role = session.get('account_type')
+        
+        user = User.query.get(seller_id) if seller_id else None
+        if not seller_id or seller_role != "seller" or not user or user.status != 'active':
+            return jsonify({"error": "Unauthorized - Seller login required"}), 401
+
+        # Get seller's cosmetics products only
+        products = Product.query.filter_by(
+            seller_id=seller_id, 
+            category='cosmetics'
+        ).order_by(Product.created_at.desc()).all()
+        
+        return jsonify({
+            "products": [p.to_dict() for p in products],
+            "total": len(products)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @products_bp.route('/uploads/<filename>')
 def serve_image(filename):
     from flask import send_from_directory

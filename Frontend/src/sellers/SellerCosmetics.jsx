@@ -26,19 +26,14 @@ const SellerCosmetics = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}/seller/cosmetics`, {
           credentials: "include",
         });
         if (!response.ok) throw new Error('Failed to fetch products');
         const data = await response.json();
 
-        // Handle different response formats
-        let cosmeticsProducts = [];
-        if (Array.isArray(data)) {
-          cosmeticsProducts = data.filter(p => p.category === 'cosmetics');
-        } else if (data.products && Array.isArray(data.products)) {
-          cosmeticsProducts = data.products.filter(p => p.category === 'cosmetics');
-        }
+        // Products are already filtered by seller and cosmetics category from backend
+        const cosmeticsProducts = data.products || data || [];
 
         setProducts(cosmeticsProducts);
         setError(null);

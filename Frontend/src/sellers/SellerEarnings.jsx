@@ -1,34 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiTrendingUp, FiCalendar, FiCreditCard, FiDownload, FiFilter, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import ReactApexChart from 'react-apexcharts';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const SellerEarnings = () => {
   const [timeRange, setTimeRange] = useState('monthly');
-  
-  // Earnings data
-  const earningsData = [
-    { month: "Jan", earnings: 1200, orders: 42, growth: 5 },
-    { month: "Feb", earnings: 2100, orders: 58, growth: 12 },
-    { month: "Mar", earnings: 1800, orders: 51, growth: -8 },
-    { month: "Apr", earnings: 2600, orders: 68, growth: 18 },
-    { month: "May", earnings: 3000, orders: 75, growth: 15 },
-    { month: "Jun", earnings: 4000, orders: 92, growth: 25 },
-    { month: "Jul", earnings: 3800, orders: 88, growth: -5 },
-    { month: "Aug", earnings: 4200, orders: 95, growth: 10 },
-    { month: "Sep", earnings: 4800, orders: 102, growth: 14 },
-    { month: "Oct", earnings: 5200, orders: 110, growth: 8 },
-    { month: "Nov", earnings: 5700, orders: 118, growth: 9 },
-    { month: "Dec", earnings: 6500, orders: 130, growth: 14 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [earningsData, setEarningsData] = useState({
+    totalEarnings: { current: 0, growth: 0, data: [] },
+    thisMonth: { current: 0, growth: 0 },
+    pending: { current: 0, change: 0 },
+    completed: { current: 0, growth: 0 },
+    earningsData: [],
+    recentTransactions: [],
+    performanceMetrics: {
+      averageOrderValue: { current: 0, change: 0 },
+      conversionRate: { current: 0, change: 0 },
+      refundRate: { current: 0, change: 0 }
+    }
+  });
 
-  // Recent transactions
-  const recentTransactions = [
-    { id: '#ORD-7842', customer: 'Sarah Johnson', date: '2023-12-15', amount: 249.99, status: 'completed' },
-    { id: '#ORD-7841', customer: 'Michael Brown', date: '2023-12-14', amount: 129.99, status: 'completed' },
-    { id: '#ORD-7840', customer: 'Jennifer Wilson', date: '2023-12-14', amount: 89.99, status: 'pending' },
-    { id: '#ORD-7839', customer: 'David Miller', date: '2023-12-13', amount: 199.99, status: 'completed' },
-    { id: '#ORD-7838', customer: 'Emily Davis', date: '2023-12-12', amount: 159.99, status: 'completed' },
-  ];
+  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+  const fetchEarningsData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${baseURL}/seller/earnings?time_range=${timeRange}`, {
+        withCredentials: true
+      });
+      
+      setEarningsData(response.data);
+    } catch (error) {
+      console.error('Error fetching earnings data:', error);
+      toast.error('Failed to fetch earnings data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEarningsData();
+  }, [timeRange]);
 
   // Chart configuration for ApexCharts
   const earningsChartOptions = {
@@ -66,7 +79,7 @@ const SellerEarnings = () => {
       }
     },
     xaxis: {
-      categories: earningsData.map(item => item.month),
+      categories: earningsData.earningsData.map(item => item.month),
       labels: {
         style: {
           colors: '#6B7280',
@@ -78,7 +91,7 @@ const SellerEarnings = () => {
     yaxis: {
       labels: {
         formatter: function (value) {
-          return '$' + value;
+          return 'KES ' + value.toFixed(0);
         },
         style: {
           colors: '#6B7280',
@@ -90,7 +103,7 @@ const SellerEarnings = () => {
     tooltip: {
       y: {
         formatter: function (value) {
-          return '$' + value;
+          return 'KES ' + value.toFixed(2);
         }
       }
     },
@@ -108,7 +121,7 @@ const SellerEarnings = () => {
 
   const earningsChartSeries = [{
     name: 'Earnings',
-    data: earningsData.map(item => item.earnings)
+    data: earningsData.earningsData.map(item => item.earnings)
   }];
 
   const ordersChartOptions = {
@@ -130,7 +143,7 @@ const SellerEarnings = () => {
       enabled: false
     },
     xaxis: {
-      categories: earningsData.map(item => item.month),
+      categories: earningsData.earningsData.map(item => item.month),
       labels: {
         style: {
           colors: '#6B7280',
@@ -162,14 +175,14 @@ const SellerEarnings = () => {
 
   const ordersChartSeries = [{
     name: 'Orders',
-    data: earningsData.map(item => item.orders)
+    data: earningsData.earningsData.map(item => item.orders)
   }];
 
   // Function to format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-KE', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'KES',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
@@ -189,6 +202,14 @@ const SellerEarnings = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -198,9 +219,12 @@ const SellerEarnings = () => {
           <p className="text-gray-600">Track your sales performance and earnings</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+          <button 
+            onClick={fetchEarningsData}
+            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
             <FiFilter className="mr-2" />
-            Filter
+            Refresh
           </button>
           <button className="flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-white hover:bg-blue-700">
             <FiDownload className="mr-2" />
@@ -218,13 +242,13 @@ const SellerEarnings = () => {
             </div>
             <div className="ml-4">
               <p className="text-gray-500 text-sm">Total Earnings</p>
-              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(12800)}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(earningsData.totalEarnings.current)}</h2>
             </div>
           </div>
           <div className="flex items-center mt-4">
-            <div className="flex items-center text-green-600">
-              <FiArrowUp className="mr-1" />
-              <span className="text-sm font-medium">12.5%</span>
+            <div className={`flex items-center ${earningsData.totalEarnings.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.totalEarnings.growth >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span className="text-sm font-medium">{Math.abs(earningsData.totalEarnings.growth).toFixed(1)}%</span>
             </div>
             <span className="text-gray-500 text-sm ml-2">vs previous month</span>
           </div>
@@ -237,13 +261,13 @@ const SellerEarnings = () => {
             </div>
             <div className="ml-4">
               <p className="text-gray-500 text-sm">This Month</p>
-              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(3200)}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(earningsData.thisMonth.current)}</h2>
             </div>
           </div>
           <div className="flex items-center mt-4">
-            <div className="flex items-center text-green-600">
-              <FiArrowUp className="mr-1" />
-              <span className="text-sm font-medium">8.3%</span>
+            <div className={`flex items-center ${earningsData.thisMonth.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.thisMonth.growth >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span className="text-sm font-medium">{Math.abs(earningsData.thisMonth.growth).toFixed(1)}%</span>
             </div>
             <span className="text-gray-500 text-sm ml-2">vs previous month</span>
           </div>
@@ -256,13 +280,13 @@ const SellerEarnings = () => {
             </div>
             <div className="ml-4">
               <p className="text-gray-500 text-sm">Pending</p>
-              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(1100)}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(earningsData.pending.current)}</h2>
             </div>
           </div>
           <div className="flex items-center mt-4">
-            <div className="flex items-center text-red-600">
-              <FiArrowDown className="mr-1" />
-              <span className="text-sm font-medium">3.2%</span>
+            <div className={`flex items-center ${earningsData.pending.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.pending.change >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span className="text-sm font-medium">{Math.abs(earningsData.pending.change).toFixed(1)}%</span>
             </div>
             <span className="text-gray-500 text-sm ml-2">vs previous month</span>
           </div>
@@ -275,13 +299,13 @@ const SellerEarnings = () => {
             </div>
             <div className="ml-4">
               <p className="text-gray-500 text-sm">Completed</p>
-              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(11700)}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{formatCurrency(earningsData.completed.current)}</h2>
             </div>
           </div>
           <div className="flex items-center mt-4">
-            <div className="flex items-center text-green-600">
-              <FiArrowUp className="mr-1" />
-              <span className="text-sm font-medium">10.7%</span>
+            <div className={`flex items-center ${earningsData.completed.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.completed.growth >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span className="text-sm font-medium">{Math.abs(earningsData.completed.growth).toFixed(1)}%</span>
             </div>
             <span className="text-gray-500 text-sm ml-2">vs previous month</span>
           </div>
@@ -369,27 +393,35 @@ const SellerEarnings = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentTransactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {transaction.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.customer}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(transaction.amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
-                      {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                    </span>
+              {earningsData.recentTransactions.length > 0 ? (
+                earningsData.recentTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {transaction.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {transaction.customer}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {transaction.date}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(transaction.amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    No transactions found. Start selling to see your earnings!
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -405,37 +437,43 @@ const SellerEarnings = () => {
         <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Average Order Value</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-800">$112.50</span>
-            <span className="ml-2 flex items-center text-green-600">
-              <FiArrowUp className="mr-1" />
-              <span>5.2%</span>
+            <span className="text-3xl font-bold text-gray-800">{formatCurrency(earningsData.performanceMetrics.averageOrderValue.current)}</span>
+            <span className={`ml-2 flex items-center ${earningsData.performanceMetrics.averageOrderValue.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.performanceMetrics.averageOrderValue.change >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span>{Math.abs(earningsData.performanceMetrics.averageOrderValue.change).toFixed(1)}%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Increased from last month</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {earningsData.performanceMetrics.averageOrderValue.change >= 0 ? 'Increased' : 'Decreased'} from last month
+          </p>
         </div>
 
         <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Conversion Rate</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-800">4.8%</span>
-            <span className="ml-2 flex items-center text-green-600">
-              <FiArrowUp className="mr-1" />
-              <span>1.7%</span>
+            <span className="text-3xl font-bold text-gray-800">{earningsData.performanceMetrics.conversionRate.current.toFixed(1)}%</span>
+            <span className={`ml-2 flex items-center ${earningsData.performanceMetrics.conversionRate.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.performanceMetrics.conversionRate.change >= 0 ? <FiArrowUp className="mr-1" /> : <FiArrowDown className="mr-1" />}
+              <span>{Math.abs(earningsData.performanceMetrics.conversionRate.change).toFixed(1)}%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Improved from last month</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {earningsData.performanceMetrics.conversionRate.change >= 0 ? 'Improved' : 'Declined'} from last month
+          </p>
         </div>
 
         <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Refund Rate</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-800">2.3%</span>
-            <span className="ml-2 flex items-center text-red-600">
-              <FiArrowDown className="mr-1" />
-              <span>0.8%</span>
+            <span className="text-3xl font-bold text-gray-800">{earningsData.performanceMetrics.refundRate.current.toFixed(1)}%</span>
+            <span className={`ml-2 flex items-center ${earningsData.performanceMetrics.refundRate.change <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {earningsData.performanceMetrics.refundRate.change <= 0 ? <FiArrowDown className="mr-1" /> : <FiArrowUp className="mr-1" />}
+              <span>{Math.abs(earningsData.performanceMetrics.refundRate.change).toFixed(1)}%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Decreased from last month</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {earningsData.performanceMetrics.refundRate.change <= 0 ? 'Decreased' : 'Increased'} from last month
+          </p>
         </div>
       </div>
     </div>

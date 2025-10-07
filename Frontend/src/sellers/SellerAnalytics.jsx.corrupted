@@ -24,8 +24,15 @@ const SellerAnalytics = () => {
       previous: 0,
       change: 0,
       data: []
-    },
-    conversionRate: {
+                      <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{buyer.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{buyer.purchases} orders</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatCurrency(buyer.value)}</div>
+                    </td>conversionRate: {
       current: 0,
       previous: 0,
       change: 0,
@@ -62,6 +69,60 @@ const SellerAnalytics = () => {
   useEffect(() => {
     fetchAnalyticsData();
   }, [timeRange]);
+
+  // Mock data for seller analytics (fallback)
+  const sellerData = {
+    totalRevenue: {
+      current: 45280,
+      previous: 38250,
+      change: 18.4,
+      data: [35, 42, 38, 45, 52, 48, 50, 55, 58, 62, 65, 70]
+    },
+    totalOrders: {
+      current: 1245,
+      previous: 985,
+      change: 26.4,
+      data: [85, 78, 92, 105, 98, 110, 115, 120, 130, 135, 140, 145]
+    },
+    averageOrderValue: {
+      current: 136.42,
+      previous: 128.75,
+      change: 5.96,
+      data: [120, 125, 122, 128, 130, 132, 134, 135, 136, 137, 136, 136]
+    },
+    conversionRate: {
+      current: 4.8,
+      previous: 3.9,
+      change: 23.1,
+      data: [3.2, 3.5, 3.8, 4.0, 4.2, 4.3, 4.5, 4.6, 4.7, 4.75, 4.8, 4.8]
+    },
+    buyerDemographics: [
+      { ageGroup: '18-24', percentage: 18, value: 224 },
+      { ageGroup: '25-34', percentage: 32, value: 398 },
+      { ageGroup: '35-44', percentage: 24, value: 299 },
+      { ageGroup: '45-54', percentage: 15, value: 187 },
+      { ageGroup: '55+', percentage: 11, value: 137 }
+    ],
+    topBuyers: [
+      { name: 'John Smith', purchases: 42, value: 5620, location: 'New York' },
+      { name: 'Emma Johnson', purchases: 38, value: 4875, location: 'Los Angeles' },
+      { name: 'Michael Brown', purchases: 35, value: 4320, location: 'Chicago' },
+      { name: 'Sarah Williams', purchases: 31, value: 3985, location: 'Houston' },
+      { name: 'David Jones', purchases: 28, value: 3620, location: 'Phoenix' }
+    ],
+    purchaseCategories: [
+      { category: 'Electronics', percentage: 35, value: 15848 },
+      { category: 'Fashion', percentage: 25, value: 11320 },
+      { category: 'Home & Kitchen', percentage: 20, value: 9056 },
+      { category: 'Books', percentage: 12, value: 5434 },
+      { category: 'Others', percentage: 8, value: 3622 }
+    ],
+    buyerActivity: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      newBuyers: [85, 78, 92, 105, 98, 110, 115, 120, 130, 135, 140, 145],
+      returningBuyers: [120, 125, 130, 135, 142, 150, 155, 160, 165, 170, 175, 180]
+    }
+  };
 
   // Chart options and series for ApexCharts
   const revenueChartOptions = {
@@ -320,14 +381,14 @@ const SellerAnalytics = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Seller Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Seller Analytics </h1>
           <p className="text-gray-600 mt-1">Track your buyer analytics and sales performance</p>
         </div>
         <div className="mt-4 md:mt-0">
@@ -575,43 +636,38 @@ const SellerAnalytics = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {analyticsData.topBuyers.map((buyer, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="font-semibold text-blue-600">
-                              {buyer.name.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{buyer.name}</div>
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="font-semibold text-blue-600">
+                            {buyer.name.split(' ').map(n => n[0]).join('')}
+                          </span>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{buyer.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{buyer.purchases} orders</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatCurrency(buyer.value)}</div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5m-2.5 8L17 20m0 0V8l5-5m-5 5l-5-5" />
-            </svg>
-            No buyer data available yet. Start getting orders to see your top buyers!
-          </div>
-        )}
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{buyer.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{buyer.location}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{buyer.purchases} orders</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">${formatNumber(buyer.value)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button className="w-full mt-4 text-center text-blue-600 font-medium hover:text-blue-800 py-2">
+          View All Buyers →
+        </button>
       </div>
     </div>
   );

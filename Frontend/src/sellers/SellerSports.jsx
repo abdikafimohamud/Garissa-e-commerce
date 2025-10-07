@@ -38,7 +38,9 @@ const SellerSports = () => {
 
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}?category=sports`, {
+      
+      // ✅ Fetch only seller's products by using seller-specific endpoint
+      const res = await fetch(`${API_URL}/seller/sports`, {
         credentials: "include",
       });
 
@@ -55,9 +57,9 @@ const SellerSports = () => {
       } catch (jsonErr) {
         throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
       }
-      console.log("API Response:", data);
+      console.log("Seller Sports API Response:", data);
 
-      // Handle different response formats and filter for sports products
+      // Handle different response formats for seller's sports products
       let products = [];
 
       if (Array.isArray(data)) {
@@ -72,24 +74,11 @@ const SellerSports = () => {
         throw new Error("Unexpected API response format");
       }
 
-      // Filter products to only include sports category
-      const sportsProducts = products.filter(
-        (product) =>
-          product.category?.toLowerCase() === "sports" ||
-          (product.subcategory?.toLowerCase &&
-            ["t-shirts", "football", "shoes"].includes(
-              product.subcategory?.toLowerCase()
-            )) ||
-          (product.subCategory?.toLowerCase &&
-            ["t-shirts", "football", "shoes"].includes(
-              product.subCategory?.toLowerCase()
-            ))
-      );
-
-      setSports(sportsProducts);
+      // Products are already filtered by seller and sports category from backend
+      setSports(products);
       setError(null);
     } catch (error) {
-      console.error("Error fetching sports:", error);
+      console.error("Error fetching seller's sports products:", error);
       setError(error.message);
       setSports([]);
     } finally {

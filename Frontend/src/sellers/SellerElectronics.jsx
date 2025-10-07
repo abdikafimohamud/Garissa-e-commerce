@@ -40,7 +40,7 @@ const SellerElectronics = () => {
 
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}?category=electronics`, {
+      const res = await fetch(`${API_URL}/seller/electronics`, {
         credentials: "include",
       });
 
@@ -57,33 +57,12 @@ const SellerElectronics = () => {
       } catch  {
         throw new Error("Response is not valid JSON");
       }
+      // Products are already filtered by seller and electronics category from backend
       let electronicsData = [];
       if (Array.isArray(data)) {
-        electronicsData = data.filter(
-          (p) =>
-            p.category?.toLowerCase() === "electronics" ||
-            (p.subcategory?.toLowerCase &&
-              ["smartphone", "laptop", "television", "audio"].includes(
-                p.subcategory?.toLowerCase()
-              )) ||
-            (p.subCategory?.toLowerCase &&
-              ["smartphone", "laptop", "television", "audio"].includes(
-                p.subCategory?.toLowerCase()
-              ))
-        );
+        electronicsData = data;
       } else if (data.products && Array.isArray(data.products)) {
-        electronicsData = data.products.filter(
-          (p) =>
-            p.category?.toLowerCase() === "electronics" ||
-            (p.subcategory?.toLowerCase &&
-              ["smartphone", "laptop", "television", "audio"].includes(
-                p.subcategory?.toLowerCase()
-              )) ||
-            (p.subCategory?.toLowerCase &&
-              ["smartphone", "laptop", "television", "audio"].includes(
-                p.subCategory?.toLowerCase()
-              ))
-        );
+        electronicsData = data.products;
       }
 
       setProducts(electronicsData);
