@@ -1,47 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const Earnings = () => {
   const [timeRange, setTimeRange] = useState('monthly');
+  const [earningsData, setEarningsData] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Mock data for earnings
-  const earningsData = {
-    totalEarnings: 120450,
-    platformFees: 18450,
-    sellerPayouts: 102000,
-    pendingPayouts: 12500,
-    completedPayouts: 89500,
-    growthRate: 12.5,
-    transactions: 1245,
-    averageTransaction: 96.75,
-    chartData: [
-      { month: "Jan", earnings: 85000, fees: 12750, payouts: 72250 },
-      { month: "Feb", earnings: 92000, fees: 13800, payouts: 78200 },
-      { month: "Mar", earnings: 87500, fees: 13125, payouts: 74375 },
-      { month: "Apr", earnings: 96500, fees: 14475, payouts: 82025 },
-      { month: "May", earnings: 102000, fees: 15300, payouts: 86700 },
-      { month: "Jun", earnings: 110000, fees: 16500, payouts: 93500 },
-      { month: "Jul", earnings: 105000, fees: 15750, payouts: 89250 },
-      { month: "Aug", earnings: 112000, fees: 16800, payouts: 95200 },
-      { month: "Sep", earnings: 118000, fees: 17700, payouts: 100300 },
-      { month: "Oct", earnings: 115000, fees: 17250, payouts: 97750 },
-      { month: "Nov", earnings: 120000, fees: 18000, payouts: 102000 },
-      { month: "Dec", earnings: 120450, fees: 18450, payouts: 102000 },
-    ],
-    topSellers: [
-      { name: "Electronics Hub", earnings: 24500, sales: 245 },
-      { name: "Fashion Empire", earnings: 19800, sales: 198 },
-      { name: "Home Essentials", earnings: 17600, sales: 176 },
-      { name: "Book World", earnings: 15200, sales: 152 },
-      { name: "Sports Gear", earnings: 14300, sales: 143 }
-    ],
-    recentPayouts: [
-      { id: 'PAY-7842', seller: "Electronics Hub", date: '2023-12-15', amount: 12450, status: 'completed' },
-      { id: 'PAY-7841', seller: "Fashion Empire", date: '2023-12-14', amount: 9950, status: 'completed' },
-      { id: 'PAY-7840', seller: "Home Essentials", date: '2023-12-14', amount: 8800, status: 'pending' },
-      { id: 'PAY-7839', seller: "Book World", date: '2023-12-13', amount: 7600, status: 'completed' },
-      { id: 'PAY-7838', seller: "Sports Gear", date: '2023-12-12', amount: 7150, status: 'completed' }
-    ]
+  // Fetch earnings data from backend
+  const fetchEarningsData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:5000/admin/earnings/dashboard', {
+        withCredentials: true
+      });
+      
+      if (response.data) {
+        setEarningsData(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching earnings data:', error);
+      toast.error('Failed to fetch earnings data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEarningsData();
+  }, [timeRange]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading earnings data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (!earningsData) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Failed to load earnings data</p>
+            <button 
+              onClick={fetchEarningsData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Process data for charts and display
+  const processedData = {
+    totalEarnings: earningsData.metrics.total_earnings.current,
+    platformFees: earningsData.metrics.platform_fees.current,
+    sellerPayouts: earningsData.metrics.seller_payouts.current,
+    pendingPayouts: earningsData.metrics.payout_distribution.pending,
+    completedPayouts: earningsData.metrics.payout_distribution.completed,
+    growthRate: earningsData.metrics.total_earnings.change,
+    transactions: earningsData.metrics.seller_payouts.transactions,
+    averageTransaction: earningsData.metrics.average_transaction.current,
+    chartData: earningsData.chart_data,
+    topSellers: earningsData.top_sellers,
+    recentPayouts: earningsData.recent_payouts
   };
 
   // Chart options for ApexCharts
@@ -80,7 +113,7 @@ const Earnings = () => {
       }
     },
     xaxis: {
-      categories: earningsData.chartData.map(item => item.month),
+      categories: processedData.chartData.map(item => item.month),
       labels: {
         style: {
           colors: '#6B7280',
@@ -92,7 +125,7 @@ const Earnings = () => {
     yaxis: {
       labels: {
         formatter: function (value) {
-          return '$' + value.toLocaleString();
+          return 'KSh ' + value.toLocaleString();
         },
         style: {
           colors: '#6B7280',
@@ -104,7 +137,7 @@ const Earnings = () => {
     tooltip: {
       y: {
         formatter: function (value) {
-          return '$' + value.toLocaleString();
+          return 'KSh ' + value.toLocaleString();
         }
       }
     },
@@ -134,15 +167,15 @@ const Earnings = () => {
   const earningsChartSeries = [
     {
       name: 'Total Earnings',
-      data: earningsData.chartData.map(item => item.earnings)
+      data: processedData.chartData.map(item => item.earnings)
     },
     {
       name: 'Platform Fees',
-      data: earningsData.chartData.map(item => item.fees)
+      data: processedData.chartData.map(item => item.fees)
     },
     {
       name: 'Seller Payouts',
-      data: earningsData.chartData.map(item => item.payouts)
+      data: processedData.chartData.map(item => item.payouts)
     }
   ];
 
@@ -178,7 +211,7 @@ const Earnings = () => {
               show: true,
               label: 'Total Payouts',
               formatter: function () {
-                return '$' + earningsData.sellerPayouts.toLocaleString();
+                return 'KSh ' + processedData.sellerPayouts.toLocaleString();
               },
               style: {
                 fontSize: '16px',
@@ -204,18 +237,14 @@ const Earnings = () => {
   };
 
   const payoutDistributionSeries = [
-    Math.round((earningsData.completedPayouts / earningsData.sellerPayouts) * 100),
-    Math.round((earningsData.pendingPayouts / earningsData.sellerPayouts) * 100)
+    Math.round((processedData.completedPayouts / processedData.sellerPayouts) * 100),
+    Math.round((processedData.pendingPayouts / processedData.sellerPayouts) * 100)
   ];
 
   // Function to format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+    if (!amount) return "KSh 0";
+    return `KSh ${Math.round(amount).toLocaleString()}`;
   };
 
   // Function to get status badge class
@@ -275,9 +304,9 @@ const Earnings = () => {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{formatCurrency(earningsData.totalEarnings)}</div>
-            <div className={`flex items-center mt-2 ${earningsData.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {earningsData.growthRate >= 0 ? (
+            <div className="text-3xl font-bold text-gray-900">{formatCurrency(processedData.totalEarnings)}</div>
+            <div className={`flex items-center mt-2 ${processedData.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {processedData.growthRate >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
@@ -286,7 +315,7 @@ const Earnings = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              <span className="text-sm font-medium">{Math.abs(earningsData.growthRate)}%</span>
+              <span className="text-sm font-medium">{Math.abs(processedData.growthRate)}%</span>
               <span className="text-sm text-gray-500 ml-1">vs previous period</span>
             </div>
           </div>
@@ -301,9 +330,9 @@ const Earnings = () => {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{formatCurrency(earningsData.platformFees)}</div>
+            <div className="text-3xl font-bold text-gray-900">{formatCurrency(processedData.platformFees)}</div>
             <div className="text-sm text-gray-500 mt-2">
-              {((earningsData.platformFees / earningsData.totalEarnings) * 100).toFixed(1)}% of total earnings
+              {earningsData.metrics.platform_fees.percentage.toFixed(1)}% of total earnings
             </div>
           </div>
         </div>
@@ -317,9 +346,9 @@ const Earnings = () => {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{formatCurrency(earningsData.sellerPayouts)}</div>
+            <div className="text-3xl font-bold text-gray-900">{formatCurrency(processedData.sellerPayouts)}</div>
             <div className="text-sm text-gray-500 mt-2">
-              {earningsData.transactions} transactions
+              {processedData.transactions} transactions
             </div>
           </div>
         </div>
@@ -333,7 +362,7 @@ const Earnings = () => {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{formatCurrency(earningsData.averageTransaction)}</div>
+            <div className="text-3xl font-bold text-gray-900">{formatCurrency(processedData.averageTransaction)}</div>
             <div className="text-sm text-gray-500 mt-2">
               Per transaction
             </div>
@@ -373,11 +402,11 @@ const Earnings = () => {
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="text-sm text-green-800 font-medium">Completed Payouts</div>
-              <div className="text-xl font-bold text-green-900">{formatCurrency(earningsData.completedPayouts)}</div>
+              <div className="text-xl font-bold text-green-900">{formatCurrency(processedData.completedPayouts)}</div>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg">
               <div className="text-sm text-yellow-800 font-medium">Pending Payouts</div>
-              <div className="text-xl font-bold text-yellow-900">{formatCurrency(earningsData.pendingPayouts)}</div>
+              <div className="text-xl font-bold text-yellow-900">{formatCurrency(processedData.pendingPayouts)}</div>
             </div>
           </div>
         </div>
@@ -389,7 +418,7 @@ const Earnings = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Top Performing Sellers</h2>
           <div className="space-y-4">
-            {earningsData.topSellers.map((seller, index) => (
+            {processedData.topSellers.map((seller, index) => (
               <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
@@ -416,7 +445,7 @@ const Earnings = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Recent Payouts</h2>
           <div className="space-y-4">
-            {earningsData.recentPayouts.map((payout) => (
+            {processedData.recentPayouts.map((payout) => (
               <div key={payout.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                 <div>
                   <h4 className="font-medium text-gray-900">{payout.seller}</h4>
@@ -442,7 +471,7 @@ const Earnings = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Platform Fee Rate</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-900">15.3%</span>
+            <span className="text-3xl font-bold text-gray-900">{earningsData.platform_stats.fee_rate}%</span>
             <span className="ml-2 flex items-center text-green-600">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -450,13 +479,13 @@ const Earnings = () => {
               <span className="text-sm">1.2%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Increased from last quarter</p>
+          <p className="text-gray-500 text-sm mt-2">Platform commission rate</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Payout Completion</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-900">87.7%</span>
+            <span className="text-3xl font-bold text-gray-900">{earningsData.platform_stats.payout_completion}%</span>
             <span className="ml-2 flex items-center text-green-600">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -464,13 +493,13 @@ const Earnings = () => {
               <span className="text-sm">3.5%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Improved from last month</p>
+          <p className="text-gray-500 text-sm mt-2">Orders completed and paid out</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Dispute Rate</h3>
           <div className="flex items-end">
-            <span className="text-3xl font-bold text-gray-900">2.1%</span>
+            <span className="text-3xl font-bold text-gray-900">{earningsData.platform_stats.dispute_rate}%</span>
             <span className="ml-2 flex items-center text-red-600">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -478,7 +507,7 @@ const Earnings = () => {
               <span className="text-sm">0.4%</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Increased from last month</p>
+          <p className="text-gray-500 text-sm mt-2">Payment disputes reported</p>
         </div>
       </div>
     </div>

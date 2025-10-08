@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earnings Dashboard Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .value {
+            font-weight: bold;
+            color: #333;
+        }
+        .growth {
+            font-size: 0.9em;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .positive {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .negative {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .error {
+            color: red;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .earnings-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .earnings-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>💰 Garissa E-Commerce Earnings Dashboard Test</h1>
+    
+    <div class="card">
+        <h2>🔗 Connection Status</h2>
+        <div id="connectionStatus">Checking connection...</div>
+        <button onclick="testConnection()">Test Connection</button>
+    </div>
+
+    <div class="card">
+        <h2>📊 Earnings Data</h2>
+        <div id="earningsData">Click "Fetch Earnings" to load data</div>
+        <button onclick="fetchEarnings()">Fetch Earnings</button>
+    </div>
+
+    <div id="metricsSection" style="display: none;">
+        <div class="card">
+            <h2>📈 Key Metrics</h2>
+            <div class="grid">
+                <div class="earnings-card">
+                    <div>Total Earnings</div>
+                    <div class="earnings-value" id="totalEarnings">-</div>
+                    <div id="earningsGrowth">-</div>
+                </div>
+                <div class="earnings-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <div>Platform Fees</div>
+                    <div class="earnings-value" id="platformFees">-</div>
+                    <div id="feesPercentage">-</div>
+                </div>
+                <div class="earnings-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div>Seller Payouts</div>
+                    <div class="earnings-value" id="sellerPayouts">-</div>
+                    <div id="transactions">-</div>
+                </div>
+                <div class="earnings-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div>Avg. Transaction</div>
+                    <div class="earnings-value" id="avgTransaction">-</div>
+                    <div>Per transaction</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🏆 Top Sellers</h2>
+            <div id="topSellers">No data loaded</div>
+        </div>
+
+        <div class="card">
+            <h2>💳 Recent Payouts</h2>
+            <div id="recentPayouts">No data loaded</div>
+        </div>
+
+        <div class="card">
+            <h2>📊 Platform Statistics</h2>
+            <div id="platformStats">No data loaded</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🔍 Raw API Response</h2>
+        <div id="rawData">No data loaded</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let isLoggedIn = false;
+
+        // Test backend connection
+        async function testConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = '<div class="loading">Testing connection...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div style="color: green;">✅ Backend Connected (Status: ${response.status})</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Backend Error (Status: ${response.status})</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Connection Failed: ${error.message}</div>`;
+            }
+        }
+
+        // Login as admin first
+        async function loginAdmin() {
+            try {
+                const response = await fetch(`${API_BASE}/login/admin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: 'admin@garissa.com',
+                        password: 'admin123'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Admin login successful:', data);
+                    isLoggedIn = true;
+                    return true;
+                } else {
+                    const error = await response.text();
+                    console.error('Admin login failed:', error);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                return false;
+            }
+        }
+
+        // Fetch earnings data
+        async function fetchEarnings() {
+            const dataDiv = document.getElementById('earningsData');
+            const rawDiv = document.getElementById('rawData');
+            const metricsSection = document.getElementById('metricsSection');
+            
+            dataDiv.innerHTML = '<div class="loading">Loading earnings...</div>';
+            
+            try {
+                // Login first if not already logged in
+                if (!isLoggedIn) {
+                    const loginSuccess = await loginAdmin();
+                    if (!loginSuccess) {
+                        dataDiv.innerHTML = '<div class="error">❌ Admin login failed</div>';
+                        return;
+                    }
+                }
+
+                const response = await fetch(`${API_BASE}/admin/earnings/dashboard`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Earnings data:', data);
+                    
+                    // Display success message
+                    dataDiv.innerHTML = '<div style="color: green;">✅ Earnings data loaded successfully!</div>';
+                    
+                    // Show metrics section
+                    metricsSection.style.display = 'block';
+                    
+                    // Display metrics
+                    displayMetrics(data);
+                    
+                    // Display raw data
+                    rawDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                } else {
+                    const error = await response.text();
+                    dataDiv.innerHTML = `<div class="error">❌ Failed to fetch earnings: ${error}</div>`;
+                }
+            } catch (error) {
+                dataDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayMetrics(data) {
+            // Key metrics
+            document.getElementById('totalEarnings').textContent = formatCurrency(data.metrics.total_earnings.current);
+            document.getElementById('earningsGrowth').textContent = `${data.metrics.total_earnings.change >= 0 ? '↗️' : '↘️'} ${Math.abs(data.metrics.total_earnings.change)}% growth`;
+            
+            document.getElementById('platformFees').textContent = formatCurrency(data.metrics.platform_fees.current);
+            document.getElementById('feesPercentage').textContent = `${data.metrics.platform_fees.percentage}% fee rate`;
+            
+            document.getElementById('sellerPayouts').textContent = formatCurrency(data.metrics.seller_payouts.current);
+            document.getElementById('transactions').textContent = `${data.metrics.seller_payouts.transactions} transactions`;
+            
+            document.getElementById('avgTransaction').textContent = formatCurrency(data.metrics.average_transaction.current);
+
+            // Top sellers
+            const sellersDiv = document.getElementById('topSellers');
+            if (data.top_sellers.length > 0) {
+                let html = '';
+                data.top_sellers.forEach((seller, index) => {
+                    html += `
+                        <div class="metric">
+                            <div>
+                                <strong>#${index + 1} ${seller.name}</strong>
+                                <div>${seller.sales} orders</div>
+                            </div>
+                            <div class="value">${formatCurrency(seller.earnings)} earned</div>
+                        </div>
+                    `;
+                });
+                sellersDiv.innerHTML = html;
+            } else {
+                sellersDiv.innerHTML = '<div class="error">No top sellers data available</div>';
+            }
+
+            // Recent payouts
+            const payoutsDiv = document.getElementById('recentPayouts');
+            if (data.recent_payouts.length > 0) {
+                let html = '';
+                data.recent_payouts.forEach(payout => {
+                    html += `
+                        <div class="metric">
+                            <div>
+                                <strong>${payout.seller}</strong>
+                                <div>${payout.id} • ${payout.date}</div>
+                            </div>
+                            <div>
+                                <div class="value">${formatCurrency(payout.amount)}</div>
+                                <div class="${payout.status === 'completed' ? 'positive' : 'negative'}">${payout.status}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                payoutsDiv.innerHTML = html;
+            } else {
+                payoutsDiv.innerHTML = '<div class="error">No recent payouts data available</div>';
+            }
+
+            // Platform stats
+            const statsDiv = document.getElementById('platformStats');
+            statsDiv.innerHTML = `
+                <div class="metric">
+                    <div><strong>Platform Fee Rate</strong></div>
+                    <div class="value">${data.platform_stats.fee_rate}%</div>
+                </div>
+                <div class="metric">
+                    <div><strong>Payout Completion Rate</strong></div>
+                    <div class="value">${data.platform_stats.payout_completion}%</div>
+                </div>
+                <div class="metric">
+                    <div><strong>Dispute Rate</strong></div>
+                    <div class="value">${data.platform_stats.dispute_rate}%</div>
+                </div>
+            `;
+        }
+
+        function formatCurrency(amount) {
+            if (!amount) return "KSh 0";
+            return `KSh ${Math.round(amount).toLocaleString()}`;
+        }
+
+        // Auto-test connection on load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

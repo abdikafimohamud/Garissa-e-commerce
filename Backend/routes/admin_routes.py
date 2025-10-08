@@ -467,3 +467,197 @@ def get_analytics_dashboard():
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+
+# -------------------------
+# GET earnings data
+# -------------------------
+@admin_bp.route("/earnings/dashboard", methods=["GET"])
+def get_earnings_dashboard():
+    """Get comprehensive earnings data for admin dashboard"""
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
+
+    try:
+        from datetime import datetime, timedelta
+        
+        # Calculate date ranges
+        now = datetime.now()
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        last_month_end = current_month_start - timedelta(days=1)
+        
+        # Platform fee rate (assuming 15% fee)
+        PLATFORM_FEE_RATE = 0.15
+        
+        # Current month earnings
+        current_month_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(Order.created_at >= current_month_start).scalar() or 0
+        
+        current_month_platform_fees = current_month_revenue * PLATFORM_FEE_RATE
+        current_month_seller_payouts = current_month_revenue - current_month_platform_fees
+        
+        # Last month earnings for comparison
+        last_month_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(
+            Order.created_at >= last_month_start,
+            Order.created_at <= last_month_end
+        ).scalar() or 0
+        
+        last_month_platform_fees = last_month_revenue * PLATFORM_FEE_RATE
+        last_month_seller_payouts = last_month_revenue - last_month_platform_fees
+        
+        # Calculate growth percentages
+        def calculate_growth(current, previous):
+            if previous == 0:
+                return 100.0 if current > 0 else 0.0
+            return round(((current - previous) / previous) * 100, 1)
+        
+        # Transaction counts
+        current_month_transactions = Order.query.filter(Order.created_at >= current_month_start).count()
+        last_month_transactions = Order.query.filter(
+            Order.created_at >= last_month_start,
+            Order.created_at <= last_month_end
+        ).count()
+        
+        # Average transaction value
+        avg_transaction = current_month_revenue / current_month_transactions if current_month_transactions > 0 else 0
+        
+        # Monthly data for the last 12 months
+        monthly_data = []
+        for i in range(12):
+            month_start = (now.replace(day=1) - timedelta(days=31*i)).replace(day=1)
+            next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+            
+            month_revenue = db.session.query(
+                func.sum(OrderItem.price * OrderItem.quantity)
+            ).join(Order).filter(
+                Order.created_at >= month_start,
+                Order.created_at < next_month
+            ).scalar() or 0
+            
+            month_fees = month_revenue * PLATFORM_FEE_RATE
+            month_payouts = month_revenue - month_fees
+            
+            monthly_data.append({
+                "month": month_start.strftime("%b"),
+                "earnings": float(month_revenue),
+                "fees": float(month_fees),
+                "payouts": float(month_payouts)
+            })
+        
+        monthly_data.reverse()  # Show oldest to newest
+        
+        # Top earning sellers this month
+        top_sellers = db.session.query(
+            User.firstname,
+            User.secondname,
+            func.sum(OrderItem.price * OrderItem.quantity).label('total_earnings'),
+            func.count(func.distinct(Order.id)).label('total_orders')
+        ).join(Product, Product.seller_id == User.id).join(OrderItem).join(Order).filter(
+            Order.created_at >= current_month_start
+        ).group_by(User.id, User.firstname, User.secondname).order_by(
+            func.sum(OrderItem.price * OrderItem.quantity).desc()
+        ).limit(5).all()
+        
+        # Calculate payout amounts based on order status
+        completed_payout_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(
+            Order.created_at >= current_month_start,
+            Order.status.in_(['delivered', 'completed'])
+        ).scalar() or 0
+        
+        pending_payout_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(
+            Order.created_at >= current_month_start,
+            Order.status.in_(['pending', 'processing', 'shipped'])
+        ).scalar() or 0
+        
+        completed_payouts = completed_payout_revenue * (1 - PLATFORM_FEE_RATE)
+        pending_payouts = pending_payout_revenue * (1 - PLATFORM_FEE_RATE)
+        
+        # Recent payouts (simulated data based on recent orders)
+        recent_orders = db.session.query(
+            Order.id,
+            User.firstname,
+            User.secondname,
+            Order.created_at,
+            func.sum(OrderItem.price * OrderItem.quantity).label('order_total'),
+            Order.status
+        ).join(OrderItem).join(Product).join(User, Product.seller_id == User.id).filter(
+            Order.created_at >= (now - timedelta(days=30))
+        ).group_by(Order.id, User.firstname, User.secondname, Order.created_at, Order.status).order_by(
+            Order.created_at.desc()
+        ).limit(5).all()
+        
+        recent_payouts = []
+        for order in recent_orders:
+            payout_amount = order.order_total * (1 - PLATFORM_FEE_RATE)
+            status = 'completed' if order.status in ['delivered', 'completed'] else 'pending'
+            recent_payouts.append({
+                "id": f"PAY-{order.id:04d}",
+                "seller": f"{order.firstname} {order.secondname}",
+                "date": order.created_at.strftime("%Y-%m-%d"),
+                "amount": float(payout_amount),
+                "status": status
+            })
+        
+        # Calculate performance metrics
+        completed_orders = Order.query.filter(
+            Order.created_at >= current_month_start,
+            Order.status.in_(['delivered', 'completed'])
+        ).count()
+        
+        payout_completion_rate = (completed_orders / current_month_transactions * 100) if current_month_transactions > 0 else 0
+        
+        return jsonify({
+            "metrics": {
+                "total_earnings": {
+                    "current": float(current_month_revenue),
+                    "previous": float(last_month_revenue),
+                    "change": calculate_growth(current_month_revenue, last_month_revenue),
+                    "growth_rate": calculate_growth(current_month_revenue, last_month_revenue)
+                },
+                "platform_fees": {
+                    "current": float(current_month_platform_fees),
+                    "previous": float(last_month_platform_fees),
+                    "percentage": PLATFORM_FEE_RATE * 100
+                },
+                "seller_payouts": {
+                    "current": float(current_month_seller_payouts),
+                    "previous": float(last_month_seller_payouts),
+                    "transactions": current_month_transactions
+                },
+                "average_transaction": {
+                    "current": float(avg_transaction),
+                    "transactions": current_month_transactions
+                },
+                "payout_distribution": {
+                    "completed": float(completed_payouts),
+                    "pending": float(pending_payouts),
+                    "completion_rate": round(payout_completion_rate, 1)
+                }
+            },
+            "chart_data": monthly_data,
+            "top_sellers": [
+                {
+                    "name": f"{seller.firstname} {seller.secondname}",
+                    "earnings": float(seller.total_earnings * (1 - PLATFORM_FEE_RATE)),
+                    "sales": int(seller.total_orders),
+                    "revenue": float(seller.total_earnings)
+                }
+                for seller in top_sellers
+            ],
+            "recent_payouts": recent_payouts,
+            "platform_stats": {
+                "fee_rate": PLATFORM_FEE_RATE * 100,
+                "payout_completion": round(payout_completion_rate, 1),
+                "dispute_rate": 2.1  # Placeholder - would come from dispute tracking system
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
