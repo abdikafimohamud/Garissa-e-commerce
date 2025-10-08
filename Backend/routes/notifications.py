@@ -1,5 +1,5 @@
 # app/routes/notifications.py
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from flask_cors import CORS
 from datetime import datetime
 from app import db
@@ -97,6 +97,36 @@ def admin_get_notifications():
 
 
 # ===============================
+# BUYER: Mark notification as read (admin notifications only)
+# ===============================
+@notifications_bp.route("/buyer/notifications/<int:notification_id>/read", methods=["PATCH"])
+def buyer_mark_notification_read(notification_id):
+    # Check if user is logged in as buyer
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized - buyer access required"}), 401
+    
+    # Get user info to verify they are a buyer
+    user = User.query.get(session['user_id'])
+    if not user or user.account_type != 'buyer':
+        return jsonify({"error": "Access denied - buyers only"}), 403
+    
+    # Get the notification and verify it's from admin
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({"error": "Notification not found"}), 404
+    
+    # Only allow buyers to mark admin notifications as read
+    if notification.sender_role != 'admin':
+        return jsonify({"error": "Access denied - admin notifications only"}), 403
+    
+    # Mark as read
+    notification.read = True
+    db.session.commit()
+    
+    return jsonify({"message": "Notification marked as read"}), 200
+
+
+# ===============================
 # ADMIN: Update notification
 # ===============================
 @notifications_bp.route("/admin/notifications/<int:notification_id>", methods=["PATCH"])
@@ -148,3 +178,72 @@ def seller_mark_as_read(notification_id):
     notif.read = True
     db.session.commit()
     return jsonify(notif.to_dict()), 200
+
+
+# ===============================
+# BUYER: Get admin notifications only
+# ===============================
+@notifications_bp.route("/buyer/<int:buyer_id>/notifications", methods=["GET"])
+def buyer_get_notifications(buyer_id):
+    """Get notifications for a specific buyer - only admin notifications"""
+    # Get notifications where:
+    # 1. sender_role is 'admin' (from admin)
+    # 2. target_user is either the buyer_id, "all", OR NULL (for broadcast messages)
+    notifications = Notification.query.filter(
+        Notification.sender_role == 'admin'
+    ).filter(
+        (Notification.target_user == str(buyer_id)) | 
+        (Notification.target_user == 'all') |
+        (Notification.target_user.is_(None))
+    ).order_by(Notification.date.desc()).all()
+    
+    return jsonify([n.to_dict() for n in notifications]), 200
+
+
+# ===============================
+# BUYER: Mark notification as read
+# ===============================
+@notifications_bp.route("/buyer/notifications/<int:notification_id>/read", methods=["PATCH"])
+def buyer_mark_as_read(notification_id):
+    """Mark a notification as read for buyer"""
+    notif = Notification.query.get(notification_id)
+    if not notif:
+        return jsonify({"error": "Notification not found"}), 404
+
+    # Ensure it's an admin notification
+    if notif.sender_role != 'admin':
+        return jsonify({"error": "Access denied"}), 403
+
+    notif.read = True
+    db.session.commit()
+    return jsonify({"message": "Notification marked as read"}), 200
+
+
+# ===============================
+# BUYER: Get all admin notifications (for current user from session)
+# ===============================
+@notifications_bp.route("/buyer/notifications", methods=["GET"])
+def get_buyer_notifications():
+    """Get admin notifications for the current authenticated buyer"""
+    from flask import session
+    
+    # Check if user is authenticated
+    if 'user_id' not in session:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    # Get user info to verify they are a buyer
+    user = User.query.get(session['user_id'])
+    if not user or user.account_type != 'buyer':
+        return jsonify({"error": "Access denied - buyers only"}), 403
+    
+    # Get admin notifications for this buyer or broadcast notifications
+    # Include notifications where target_user is "all", user.id, or None
+    notifications = Notification.query.filter(
+        Notification.sender_role == 'admin'
+    ).filter(
+        (Notification.target_user == str(user.id)) | 
+        (Notification.target_user == 'all') |
+        (Notification.target_user.is_(None))
+    ).order_by(Notification.date.desc()).all()
+    
+    return jsonify([n.to_dict() for n in notifications]), 200

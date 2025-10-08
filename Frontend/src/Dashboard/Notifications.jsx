@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 const BuyerNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -16,17 +17,34 @@ const BuyerNotifications = () => {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications`);
+      // Use the buyer-specific endpoint that only returns admin notifications
+      const response = await fetch(`${API_BASE_URL}/buyer/notifications`, {
+        method: 'GET',
+        credentials: 'include', // Include session cookies
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
       if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Please log in to view notifications');
+          return;
+        }
+        if (response.status === 403) {
+          toast.error('Access denied - buyers only');
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
-      // Ensure we're working with an array
+      // Backend already filters for admin notifications only
       const notificationsData = Array.isArray(data) ? data : [];
       setNotifications(notificationsData);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      alert('Failed to fetch notifications');
+      toast.error('Failed to fetch notifications');
       setNotifications([]); // Set to empty array on error
     } finally {
       setLoading(false);
@@ -35,16 +53,20 @@ const BuyerNotifications = () => {
 
   const markAsRead = async (id) => {
     try {
-      // Update the read status on the server
-      const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+      // Use the buyer-specific endpoint to mark notification as read
+      const response = await fetch(`${API_BASE_URL}/buyer/notifications/${id}/read`, {
         method: 'PATCH',
+        credentials: 'include', // Include session cookies
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ read: true })
+        }
       });
       
       if (!response.ok) {
+        if (response.status === 403) {
+          toast.error('Access denied - admin notifications only');
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
@@ -52,8 +74,10 @@ const BuyerNotifications = () => {
       setNotifications(notifications.map(notif => 
         notif.id === id ? {...notif, read: true} : notif
       ));
+      toast.success('Notification marked as read');
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      toast.error('Failed to mark notification as read');
     }
   };
 

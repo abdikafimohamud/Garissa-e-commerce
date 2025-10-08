@@ -64,8 +64,8 @@ const DashboardHome = () => {
           }
         }
 
-        // Fetch notifications
-        const notifRes = await fetch("http://localhost:5000/notifications", {
+        // Fetch buyer notifications (admin notifications only)
+        const notifRes = await fetch("http://localhost:5000/buyer/notifications", {
           credentials: "include",
         });
         if (notifRes.ok) {
@@ -73,6 +73,9 @@ const DashboardHome = () => {
           setNotifications(
             Array.isArray(notifData) ? notifData.slice(0, 5) : []
           );
+        } else {
+          console.error('Failed to fetch buyer notifications:', notifRes.status);
+          setNotifications([]);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -85,9 +88,9 @@ const DashboardHome = () => {
   // You can add other buyer data fetches here, but do not fetch /api/orders to avoid 404 errors.
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-KE", {
       style: "currency",
-      currency: "USD",
+      currency: "KES",
     }).format(amount);
   };
 
@@ -103,6 +106,19 @@ const DashboardHome = () => {
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getNotificationTypeColor = (type) => {
+    switch (type) {
+      case 'info': 
+        return 'bg-blue-100 text-blue-800';
+      case 'warning': 
+        return 'bg-yellow-100 text-yellow-800';
+      case 'alert': 
+        return 'bg-red-100 text-red-800';
+      default: 
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -177,17 +193,35 @@ const DashboardHome = () => {
       {/* Recent Orders Section */}
       {/* ==== Notifications ==== */}
       <div className="bg-white p-6 rounded-lg shadow mt-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Notifications</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-800">Notifications</h2>
+          <a
+            href="/Buyers/notifications"
+            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+          >
+            View All →
+          </a>
+        </div>
         {notifications.length === 0 ? (
-          <div className="text-gray-500">No notifications yet.</div>
+          <div className="text-gray-500 text-center py-4">No notifications yet.</div>
         ) : (
           <ul className="divide-y divide-gray-200">
             {notifications.map((notif) => (
-              <li key={notif.id} className="py-3 flex flex-col">
-                <span className="font-semibold text-blue-700">
-                  {notif.title}
-                </span>
-                <span className="text-gray-700">{notif.message}</span>
+              <li key={notif.id} className={`py-3 flex flex-col ${!notif.read ? 'bg-blue-50 px-3 rounded-lg' : ''}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getNotificationTypeColor(notif.type)}`}>
+                    {notif.type}
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {notif.title}
+                  </span>
+                  {!notif.read && (
+                    <span className="ml-auto px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                      New
+                    </span>
+                  )}
+                </div>
+                <span className="text-gray-700 text-sm">{notif.message}</span>
                 <span className="text-xs text-gray-400 mt-1">
                   {new Date(notif.date).toLocaleString()}
                 </span>
