@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models import User, Order, OrderItem
+from app.models import User, Order, OrderItem, Product
 from sqlalchemy import func
 
 admin_bp = Blueprint("admin", __name__)
@@ -186,5 +186,127 @@ def update_buyer_status(id):
 
     return jsonify({"message": f"Buyer {data['status']} successfully"}), 200
 
+# -------------------------
+# GET seller order statistics
+# -------------------------
+@admin_bp.route("/sellers/orders-stats", methods=["GET"])
+def get_seller_orders_stats():
+    """Get order statistics for all sellers"""
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
 
+    try:
+        # Get all sellers
+        sellers = User.query.filter_by(account_type="seller").all()
+        
+        seller_stats = []
+        for seller in sellers:
+            # Get seller's products
+            seller_products = Product.query.filter_by(seller_id=seller.id).all()
+            product_ids = [product.id for product in seller_products]
+            
+            if product_ids:
+                # Get orders for seller's products
+                pending_orders = db.session.query(Order).join(OrderItem).filter(
+                    OrderItem.product_id.in_(product_ids),
+                    Order.status.in_(['pending', 'processing', 'confirmed'])
+                ).count()
+                
+                completed_orders = db.session.query(Order).join(OrderItem).filter(
+                    OrderItem.product_id.in_(product_ids),
+                    Order.status.in_(['delivered', 'completed'])
+                ).count()
+                
+                total_orders = pending_orders + completed_orders
+                
+                # Calculate total revenue for this seller
+                total_revenue = db.session.query(
+                    func.sum(OrderItem.price * OrderItem.quantity)
+                ).join(Order).filter(
+                    OrderItem.product_id.in_(product_ids),
+                    Order.status.in_(['delivered', 'completed'])
+                ).scalar() or 0
+            else:
+                pending_orders = 0
+                completed_orders = 0
+                total_orders = 0
+                total_revenue = 0
+            
+            seller_stats.append({
+                "id": seller.id,
+                "name": f"{seller.firstname} {seller.secondname}",
+                "email": seller.email,
+                "phone": seller.phone,
+                "status": seller.status,
+                "total_products": len(seller_products),
+                "pending_orders": pending_orders,
+                "completed_orders": completed_orders,
+                "total_orders": total_orders,
+                "total_revenue": float(total_revenue)
+            })
+        
+        return jsonify({
+            "sellers": seller_stats,
+            "total_sellers": len(sellers)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+# -------------------------
+# GET specific seller orders
+# -------------------------
+@admin_bp.route("/sellers/<int:seller_id>/orders", methods=["GET"])
+def get_seller_orders(seller_id):
+    """Get detailed orders for a specific seller"""
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
+
+    try:
+        # Get seller
+        seller = User.query.filter_by(id=seller_id, account_type="seller").first()
+        if not seller:
+            return jsonify({"error": "Seller not found"}), 404
+
+        # Get seller's products
+        seller_products = Product.query.filter_by(seller_id=seller.id).all()
+        product_ids = [product.id for product in seller_products]
+        
+        if not product_ids:
+            return jsonify({"orders": [], "seller": seller.firstname + " " + seller.secondname}), 200
+        
+        # Get orders with details
+        orders = db.session.query(Order, OrderItem, Product, User).join(
+            OrderItem, Order.id == OrderItem.order_id
+        ).join(
+            Product, OrderItem.product_id == Product.id
+        ).join(
+            User, Order.user_id == User.id
+        ).filter(
+            Product.id.in_(product_ids)
+        ).all()
+        
+        order_details = []
+        for order, order_item, product, buyer in orders:
+            order_details.append({
+                "order_id": order.id,
+                "order_number": order.order_number,
+                "buyer_name": f"{buyer.firstname} {buyer.secondname}",
+                "buyer_email": buyer.email,
+                "product_name": product.name,
+                "quantity": order_item.quantity,
+                "price": float(order_item.price),
+                "total": float(order_item.price * order_item.quantity),
+                "status": order.status,
+                "order_date": order.created_at.isoformat() if order.created_at else "N/A",
+                "shipping_address_id": order.shipping_address_id
+            })
+        
+        return jsonify({
+            "orders": order_details,
+            "seller": f"{seller.firstname} {seller.secondname}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
