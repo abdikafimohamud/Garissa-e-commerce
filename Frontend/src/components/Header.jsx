@@ -20,7 +20,12 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   // Fetch notifications on page load and when dropdown opens
   useEffect(() => {
     setNotifLoading(true);
-    fetch("http://localhost:5000/api/notifications", {
+    // Use buyer-specific endpoint if user is a buyer
+    const endpoint = userType === "buyer" 
+      ? "http://localhost:5000/buyer/notifications" 
+      : "http://localhost:5000/api/notifications";
+      
+    fetch(endpoint, {
       credentials: "include",
     })
       .then((res) =>
@@ -30,16 +35,23 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
         })
       )
       .then((data) => {
-        setNotifications(data.notifications || []);
+        // Handle both array response (buyer notifications) and object response (general notifications)
+        const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
+        setNotifications(notificationsList);
         setNotifLoading(false);
       })
       .catch(() => setNotifLoading(false));
-  }, []);
+  }, [userType]);
 
   useEffect(() => {
     if (isNotifDropdownOpen) {
       setNotifLoading(true);
-      fetch("http://localhost:5000/api/notifications", {
+      // Use buyer-specific endpoint if user is a buyer
+      const endpoint = userType === "buyer" 
+        ? "http://localhost:5000/buyer/notifications" 
+        : "http://localhost:5000/api/notifications";
+        
+      fetch(endpoint, {
         credentials: "include",
       })
         .then((res) =>
@@ -49,12 +61,14 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
           })
         )
         .then((data) => {
-          setNotifications(data.notifications || []);
+          // Handle both array response (buyer notifications) and object response (general notifications)
+          const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
+          setNotifications(notificationsList);
           setNotifLoading(false);
         })
         .catch(() => setNotifLoading(false));
     }
-  }, [isNotifDropdownOpen]);
+  }, [isNotifDropdownOpen, userType]);
   const navigate = useNavigate();
   const authContext = useAuth();
 
@@ -236,28 +250,13 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
                     ? "/seller/profile-settings"
                     : userType === "admin"
                     ? "/admin/profile"
-                    : "/Buyers/Profilee"
+                    : "/Buyers/profile"
                 }
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsUserDropdownOpen(false)}
               >
                 <FaUser className="mr-2" />
                 Profile
-              </Link>
-
-              <Link
-                to={
-                  userType === "seller"
-                    ? "/seller/profile-settings"
-                    : userType === "admin"
-                    ? "/admin/settings"
-                    : "/Buyers/settings"
-                }
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                onClick={() => setIsUserDropdownOpen(false)}
-              >
-                <FaCog className="mr-2" />
-                Settings
               </Link>
 
               <button

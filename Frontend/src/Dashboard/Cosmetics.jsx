@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import Products from "../pages/Buyers";
 
-const Cosmetics = ({ addToCart }) => {
+const Cosmetics = () => {
+  const { cartItems, setCartItems } = useOutletContext();
+  
+  // Create addToCart function
+  const addToCart = (product) => {
+    setCartItems((prev) => {
+      const existingItem = prev.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
   const [cosmetics, setCosmetics] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedBrands, setSelectedBrands] = useState([]);

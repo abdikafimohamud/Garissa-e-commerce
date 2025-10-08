@@ -1,7 +1,8 @@
 import { FiShoppingCart, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 
-const Cart = ({ cartItems, setCartItems }) => {
+const Cart = () => {
+  const { cartItems, setCartItems } = useOutletContext();
   // Cart functions
   const removeFromCart = (id) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));

@@ -121,7 +121,7 @@ function App() {
           path="/Buyers"
           element={
             // <ProtectedRoute role="buyer">
-              <DashboardLayout />
+              <DashboardLayout cartItems={cartItems} setCartItems={setCartItems} />
             // </ProtectedRoute>
           }
         >
@@ -129,28 +129,28 @@ function App() {
           <Route path="dashboard-home" element={<DashboardHome />} />
           <Route
             path="clothes"
-            element={<Clothes addToCart={addToCart} />}
+            element={<Clothes />}
           />
           <Route
             path="cosmetics"
-            element={<Cosmetics addToCart={addToCart} />}
+            element={<Cosmetics />}
           />
           <Route
             path="electronics"
-            element={<Electronics addToCart={addToCart} />}
+            element={<Electronics />}
           />
           <Route
             path="sports"
-            element={<Sports addToCart={addToCart} />}
+            element={<Sports />}
           />
           <Route path="profile" element={<BuyerProfile />} />
           <Route
             path="cart"
-            element={<Cart cartItems={cartItems} setCartItems={setCartItems} />}
+            element={<Cart />}
           />
           <Route
             path="checkout"
-            element={<Checkout cartItems={cartItems} clearCart={clearCart} />}
+            element={<Checkout />}
           />
           <Route path="/Buyers/order-details" element={<OrderDetails />} />
           <Route path="Notifications" element={<Notifications />} />

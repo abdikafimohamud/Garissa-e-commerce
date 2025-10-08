@@ -5,13 +5,19 @@ import {
   FiMapPin,
   FiCheckCircle,
 } from "react-icons/fi";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 // API base URL - adjust this to match your Flask backend URL
 const API_BASE_URL = "http://localhost:5000"; // Default Flask port
 
-const Checkout = ({ cartItems, clearCart }) => {
+const Checkout = () => {
+  const { cartItems, setCartItems } = useOutletContext();
+  
+  // Create clearCart function
+  const clearCart = () => {
+    setCartItems([]);
+  };
   const { user, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 

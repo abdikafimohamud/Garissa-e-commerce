@@ -49,7 +49,7 @@ const DashboardLayout = ({ cartItems = [], setCartItems }) => {
           )}
 
           <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-12rem)]">
-            <Outlet />
+            <Outlet context={{ cartItems, setCartItems }} />
           </div>
         </main>
       </div>
