@@ -158,7 +158,36 @@ def admin_delete_notification(notification_id):
 
 
 # ===============================
-# SELLER: Get their notifications
+# SELLER: Get their notifications (session-based)
+# ===============================
+@notifications_bp.route("/seller/notifications", methods=["GET"])
+def get_seller_notifications():
+    """Get notifications for the current authenticated seller"""
+    # Check if user is authenticated
+    if 'user_id' not in session:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    # Get user info to verify they are a seller
+    user = User.query.get(session['user_id'])
+    if not user or user.account_type != 'seller':
+        return jsonify({"error": "Access denied - sellers only"}), 403
+    
+    # Get notifications for this seller:
+    # 1. Notifications targeted specifically to this seller (admin or system notifications)
+    # 2. Broadcast notifications (target_user='all')
+    # 3. General notifications (target_user=None)
+    notifications = Notification.query.filter(
+        (Notification.target_user == str(user.id)) | 
+        (Notification.target_user == user.id) |  # In case target_user is stored as integer
+        (Notification.target_user == 'all') |
+        (Notification.target_user.is_(None))
+    ).order_by(Notification.date.desc()).all()
+    
+    return jsonify([n.to_dict() for n in notifications]), 200
+
+
+# ===============================
+# SELLER: Get their notifications (by ID - deprecated, use session-based above)
 # ===============================
 @notifications_bp.route("/seller/<int:seller_id>/notifications", methods=["GET"])
 def seller_get_notifications(seller_id):

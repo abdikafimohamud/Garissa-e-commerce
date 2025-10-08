@@ -17,11 +17,15 @@ export default function SellerNotifications() {
         withCredentials: true
       });
       
-      setNotifications(response.data.notifications);
-      setUnreadCount(response.data.notifications.filter(n => !n.read).length);
+      // Handle both array response and object response
+      const notificationsData = Array.isArray(response.data) ? response.data : (response.data.notifications || []);
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to fetch notifications');
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -72,8 +76,12 @@ export default function SellerNotifications() {
         return <FiBell className="text-blue-500" />;
       case 'warning':
         return <FiAlertCircle className="text-yellow-500" />;
+      case 'alert':
+        return <FiAlertCircle className="text-red-500" />;
       case 'success':
         return <FiCheck className="text-green-500" />;
+      case 'info':
+        return <FiBell className="text-blue-500" />;
       default:
         return <FiBell className="text-gray-500" />;
     }
@@ -85,8 +93,12 @@ export default function SellerNotifications() {
         return 'border-l-blue-500 bg-blue-50';
       case 'warning':
         return 'border-l-yellow-500 bg-yellow-50';
+      case 'alert':
+        return 'border-l-red-500 bg-red-50';
       case 'success':
         return 'border-l-green-500 bg-green-50';
+      case 'info':
+        return 'border-l-blue-500 bg-blue-50';
       default:
         return 'border-l-gray-500 bg-gray-50';
     }

@@ -20,53 +20,91 @@ const Header = ({ cartItems = [], onToggleSidebar, userType = "buyer" }) => {
   // Fetch notifications on page load and when dropdown opens
   useEffect(() => {
     setNotifLoading(true);
-    // Use buyer-specific endpoint if user is a buyer
-    const endpoint = userType === "buyer" 
-      ? "http://localhost:5000/buyer/notifications" 
-      : "http://localhost:5000/api/notifications";
+    // Use specific endpoints based on user type
+    let endpoint;
+    if (userType === "buyer") {
+      endpoint = "http://localhost:5000/buyer/notifications";
+    } else if (userType === "seller") {
+      endpoint = "http://localhost:5000/seller/notifications"; // Session-based seller notifications
+    } else if (userType === "admin") {
+      endpoint = "http://localhost:5000/admin/notifications";
+    } else {
+      endpoint = "http://localhost:5000/notifications";
+    }
       
     fetch(endpoint, {
       credentials: "include",
     })
-      .then((res) =>
-        res.json().catch((jsonErr) => {
-          setNotifLoading(false);
-          throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
-        })
-      )
+      .then((res) => {
+        if (!res.ok) {
+          // If 401 or 403, set empty notifications and stop loading
+          if (res.status === 401 || res.status === 403) {
+            setNotifications([]);
+            setNotifLoading(false);
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        // Handle both array response (buyer notifications) and object response (general notifications)
-        const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
-        setNotifications(notificationsList);
+        if (data) {
+          // Handle both array response (buyer notifications) and object response (general notifications)
+          const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
+          setNotifications(notificationsList);
+        }
         setNotifLoading(false);
       })
-      .catch(() => setNotifLoading(false));
+      .catch((error) => {
+        console.log("Notification fetch error:", error.message);
+        setNotifications([]);
+        setNotifLoading(false);
+      });
   }, [userType]);
 
   useEffect(() => {
     if (isNotifDropdownOpen) {
       setNotifLoading(true);
-      // Use buyer-specific endpoint if user is a buyer
-      const endpoint = userType === "buyer" 
-        ? "http://localhost:5000/buyer/notifications" 
-        : "http://localhost:5000/api/notifications";
+      // Use specific endpoints based on user type
+      let endpoint;
+      if (userType === "buyer") {
+        endpoint = "http://localhost:5000/buyer/notifications";
+      } else if (userType === "seller") {
+        endpoint = "http://localhost:5000/seller/notifications"; // Session-based seller notifications
+      } else if (userType === "admin") {
+        endpoint = "http://localhost:5000/admin/notifications";
+      } else {
+        endpoint = "http://localhost:5000/notifications";
+      }
         
       fetch(endpoint, {
         credentials: "include",
       })
-        .then((res) =>
-          res.json().catch((jsonErr) => {
-            setNotifLoading(false);
-            throw new Error(`Response is not valid JSON: ${jsonErr.message}`);
-          })
-        )
+        .then((res) => {
+          if (!res.ok) {
+            // If 401 or 403, set empty notifications and stop loading
+            if (res.status === 401 || res.status === 403) {
+              setNotifications([]);
+              setNotifLoading(false);
+              return;
+            }
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
-          // Handle both array response (buyer notifications) and object response (general notifications)
-          const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
-          setNotifications(notificationsList);
+          if (data) {
+            // Handle both array response (buyer notifications) and object response (general notifications)
+            const notificationsList = Array.isArray(data) ? data : (data.notifications || []);
+            setNotifications(notificationsList);
+          }
           setNotifLoading(false);
         })
-        .catch(() => setNotifLoading(false));
+        .catch((error) => {
+          console.log("Notification fetch error:", error.message);
+          setNotifications([]);
+          setNotifLoading(false);
+        });
     }
   }, [isNotifDropdownOpen, userType]);
   const navigate = useNavigate();
