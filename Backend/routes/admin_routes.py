@@ -310,3 +310,160 @@ def get_seller_orders(seller_id):
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+# -------------------------
+# GET analytics data
+# -------------------------
+@admin_bp.route("/analytics/dashboard", methods=["GET"])
+def get_analytics_dashboard():
+    """Get comprehensive analytics data for admin dashboard"""
+    if not require_admin_auth():
+        return jsonify({"error": "Unauthorized - Admin access required"}), 401
+
+    try:
+        from datetime import datetime, timedelta
+        
+        # Calculate date ranges
+        now = datetime.now()
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        last_month_end = current_month_start - timedelta(days=1)
+        
+        # Current month data
+        current_month_orders = Order.query.filter(Order.created_at >= current_month_start).all()
+        current_month_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(Order.created_at >= current_month_start).scalar() or 0
+        
+        # Last month data for comparison
+        last_month_orders = Order.query.filter(
+            Order.created_at >= last_month_start,
+            Order.created_at <= last_month_end
+        ).all()
+        last_month_revenue = db.session.query(
+            func.sum(OrderItem.price * OrderItem.quantity)
+        ).join(Order).filter(
+            Order.created_at >= last_month_start,
+            Order.created_at <= last_month_end
+        ).scalar() or 0
+        
+        # Calculate growth percentages
+        def calculate_growth(current, previous):
+            if previous == 0:
+                return 100.0 if current > 0 else 0.0
+            return round(((current - previous) / previous) * 100, 1)
+        
+        current_orders_count = len(current_month_orders)
+        last_orders_count = len(last_month_orders)
+        
+        # Active users (users who made orders this month)
+        current_active_users = db.session.query(User.id).join(Order).filter(
+            Order.created_at >= current_month_start
+        ).distinct().count()
+        
+        last_active_users = db.session.query(User.id).join(Order).filter(
+            Order.created_at >= last_month_start,
+            Order.created_at <= last_month_end
+        ).distinct().count()
+        
+        # Monthly data for the last 12 months
+        monthly_data = []
+        for i in range(12):
+            month_start = (now.replace(day=1) - timedelta(days=31*i)).replace(day=1)
+            next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+            
+            month_orders = Order.query.filter(
+                Order.created_at >= month_start,
+                Order.created_at < next_month
+            ).count()
+            
+            month_revenue = db.session.query(
+                func.sum(OrderItem.price * OrderItem.quantity)
+            ).join(Order).filter(
+                Order.created_at >= month_start,
+                Order.created_at < next_month
+            ).scalar() or 0
+            
+            month_users = db.session.query(User.id).join(Order).filter(
+                Order.created_at >= month_start,
+                Order.created_at < next_month
+            ).distinct().count()
+            
+            monthly_data.append({
+                "month": month_start.strftime("%b"),
+                "orders": month_orders,
+                "revenue": float(month_revenue),
+                "users": month_users
+            })
+        
+        monthly_data.reverse()  # Show oldest to newest
+        
+        # Top products
+        top_products = db.session.query(
+            Product.name,
+            func.sum(OrderItem.quantity).label('total_sold'),
+            func.sum(OrderItem.price * OrderItem.quantity).label('total_revenue')
+        ).join(OrderItem).join(Order).filter(
+            Order.created_at >= current_month_start
+        ).group_by(Product.id, Product.name).order_by(
+            func.sum(OrderItem.quantity).desc()
+        ).limit(5).all()
+        
+        # Order status distribution
+        order_statuses = db.session.query(
+            Order.status,
+            func.count(Order.id).label('count')
+        ).filter(Order.created_at >= current_month_start).group_by(Order.status).all()
+        
+        # Calculate conversion rate (orders/active users)
+        current_conversion = round((current_orders_count / current_active_users * 100), 1) if current_active_users > 0 else 0
+        last_conversion = round((last_orders_count / last_active_users * 100), 1) if last_active_users > 0 else 0
+        
+        return jsonify({
+            "metrics": {
+                "total_sales": {
+                    "current": current_orders_count,
+                    "previous": last_orders_count,
+                    "change": calculate_growth(current_orders_count, last_orders_count),
+                    "data": [month["orders"] for month in monthly_data]
+                },
+                "active_users": {
+                    "current": current_active_users,
+                    "previous": last_active_users,
+                    "change": calculate_growth(current_active_users, last_active_users),
+                    "data": [month["users"] for month in monthly_data]
+                },
+                "revenue": {
+                    "current": float(current_month_revenue),
+                    "previous": float(last_month_revenue),
+                    "change": calculate_growth(current_month_revenue, last_month_revenue),
+                    "data": [month["revenue"] for month in monthly_data]
+                },
+                "conversion_rate": {
+                    "current": current_conversion,
+                    "previous": last_conversion,
+                    "change": calculate_growth(current_conversion, last_conversion),
+                    "data": [round((monthly_data[i]["orders"] / monthly_data[i]["users"] * 100), 1) if monthly_data[i]["users"] > 0 else 0 for i in range(12)]
+                }
+            },
+            "monthly_data": monthly_data,
+            "top_products": [
+                {
+                    "name": product.name,
+                    "sales": int(product.total_sold),
+                    "revenue": float(product.total_revenue)
+                }
+                for product in top_products
+            ],
+            "order_statuses": [
+                {
+                    "status": status.status,
+                    "count": status.count,
+                    "percentage": round((status.count / current_orders_count * 100), 1) if current_orders_count > 0 else 0
+                }
+                for status in order_statuses
+            ]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+

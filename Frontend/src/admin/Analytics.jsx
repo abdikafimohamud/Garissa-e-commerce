@@ -1,54 +1,68 @@
 // src/admin/Analytics.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 export default function Analytics() {
   const [timeRange, setTimeRange] = useState('monthly');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Mock data for demonstration
-  const analyticsData = {
-    monthlySales: {
-      current: 12450,
-      previous: 9820,
-      change: 26.8,
-      data: [65, 59, 80, 81, 56, 55, 72, 68, 75, 80, 85, 90]
-    },
-    activeUsers: {
-      current: 2843,
-      previous: 2456,
-      change: 15.8,
-      data: [1200, 1300, 1450, 1600, 1800, 2000, 2200, 2400, 2600, 2750, 2800, 2843]
-    },
-    revenue: {
-      current: 89234,
-      previous: 75620,
-      change: 18.0,
-      data: [45, 52, 48, 60, 65, 70, 75, 72, 78, 82, 85, 89]
-    },
-    conversionRate: {
-      current: 4.8,
-      previous: 3.9,
-      change: 23.1,
-      data: [2.8, 3.2, 3.5, 3.8, 4.0, 4.2, 4.3, 4.5, 4.6, 4.7, 4.75, 4.8]
-    },
-    topProducts: [
-      { name: 'Wireless Headphones', sales: 245, revenue: 12250 },
-      { name: 'Smart Watch', sales: 198, revenue: 29700 },
-      { name: 'Fitness Tracker', sales: 176, revenue: 12320 },
-      { name: 'Bluetooth Speaker', sales: 152, revenue: 9120 },
-      { name: 'Phone Case', sales: 143, revenue: 4290 }
-    ],
-    trafficSources: [
-      { source: 'Direct', visitors: 1245, percentage: 35 },
-      { source: 'Organic Search', visitors: 985, percentage: 28 },
-      { source: 'Social Media', visitors: 756, percentage: 21 },
-      { source: 'Email', visitors: 345, percentage: 10 },
-      { source: 'Referral', visitors: 215, percentage: 6 }
-    ]
+  // Fetch analytics data from backend
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:5000/admin/analytics/dashboard', {
+        withCredentials: true
+      });
+      
+      if (response.data) {
+        setAnalyticsData(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+      toast.error('Failed to fetch analytics data');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [timeRange]);
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading analytics data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Failed to load analytics data</p>
+            <button 
+              onClick={fetchAnalyticsData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Chart options and series for ApexCharts
-  const [salesChartOptions] = useState({
+  const salesChartOptions = {
     chart: {
       height: 350,
       type: 'line',
@@ -68,7 +82,7 @@ export default function Analytics() {
     },
     colors: ['#3B82F6'],
     xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      categories: analyticsData.monthly_data.map(month => month.month),
     },
     title: {
       text: 'Monthly Sales Performance',
@@ -84,16 +98,16 @@ export default function Analytics() {
         opacity: 0.5
       },
     },
-  });
+  };
 
-  const [salesChartSeries] = useState([
+  const salesChartSeries = [
     {
-      name: "Sales",
-      data: analyticsData.monthlySales.data
+      name: "Orders",
+      data: analyticsData.metrics.total_sales.data
     }
-  ]);
+  ];
 
-  const [usersChartOptions] = useState({
+  const usersChartOptions = {
     chart: {
       height: 350,
       type: 'area',
@@ -110,7 +124,7 @@ export default function Analytics() {
     },
     colors: ['#10B981'],
     xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      categories: analyticsData.monthly_data.map(month => month.month),
     },
     title: {
       text: 'User Growth Analysis',
@@ -125,27 +139,27 @@ export default function Analytics() {
         format: 'MMM'
       },
     },
-  });
+  };
 
-  const [usersChartSeries] = useState([
+  const usersChartSeries = [
     {
       name: "Active Users",
-      data: analyticsData.activeUsers.data
+      data: analyticsData.metrics.active_users.data
     }
-  ]);
+  ];
 
-  const [trafficChartOptions] = useState({
+  const orderStatusChartOptions = {
     chart: {
       type: 'donut',
       height: 350
     },
-    labels: analyticsData.trafficSources.map(source => source.source),
+    labels: analyticsData.order_statuses.map(status => status.status),
     colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
     legend: {
       position: 'bottom'
     },
     title: {
-      text: 'Traffic Sources',
+      text: 'Order Status Distribution',
       align: 'center',
       style: {
         fontSize: '16px',
@@ -165,7 +179,7 @@ export default function Analytics() {
             show: true,
             total: {
               show: true,
-              label: 'Total Visitors',
+              label: 'Total Orders',
               formatter: function (w) {
                 return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
               }
@@ -185,20 +199,27 @@ export default function Analytics() {
         }
       }
     }]
-  });
+  };
 
-  const [trafficChartSeries] = useState(
-    analyticsData.trafficSources.map(source => source.percentage)
-  );
+  const orderStatusChartSeries = analyticsData.order_statuses.map(status => status.count);
 
   // Function to format numbers with commas
   const formatNumber = (num) => {
+    if (!num) return "0";
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  // Function to format currency
+  const formatCurrency = (amount) => {
+    return `KSh ${formatNumber(Math.round(amount))}`;
   };
 
   // Function to render mini charts (simplified for this example)
   const renderMiniChart = (data) => {
+    if (!data || data.length === 0) return null;
     const maxValue = Math.max(...data);
+    if (maxValue === 0) return <div className="h-10 flex items-center text-gray-400 text-sm">No data</div>;
+    
     return (
       <div className="flex items-end h-10 mt-2 space-x-px">
         {data.map((value, index) => (
@@ -249,15 +270,15 @@ export default function Analytics() {
         {/* Sales Card */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-700">Total Sales</h3>
+            <h3 className="text-lg font-semibold text-gray-700">Total Orders</h3>
             <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
               {timeRange}
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">${formatNumber(analyticsData.monthlySales.current)}</div>
-            <div className={`flex items-center mt-2 ${analyticsData.monthlySales.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analyticsData.monthlySales.change >= 0 ? (
+            <div className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.metrics.total_sales.current)}</div>
+            <div className={`flex items-center mt-2 ${analyticsData.metrics.total_sales.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analyticsData.metrics.total_sales.change >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
@@ -266,11 +287,11 @@ export default function Analytics() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              <span className="text-sm font-medium">{Math.abs(analyticsData.monthlySales.change)}%</span>
+              <span className="text-sm font-medium">{Math.abs(analyticsData.metrics.total_sales.change)}%</span>
               <span className="text-sm text-gray-500 ml-1">vs previous period</span>
             </div>
           </div>
-          {renderMiniChart(analyticsData.monthlySales.data)}
+          {renderMiniChart(analyticsData.metrics.total_sales.data)}
         </div>
 
         {/* Users Card */}
@@ -282,9 +303,9 @@ export default function Analytics() {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.activeUsers.current)}</div>
-            <div className={`flex items-center mt-2 ${analyticsData.activeUsers.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analyticsData.activeUsers.change >= 0 ? (
+            <div className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.metrics.active_users.current)}</div>
+            <div className={`flex items-center mt-2 ${analyticsData.metrics.active_users.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analyticsData.metrics.active_users.change >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
@@ -293,11 +314,11 @@ export default function Analytics() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              <span className="text-sm font-medium">{Math.abs(analyticsData.activeUsers.change)}%</span>
+              <span className="text-sm font-medium">{Math.abs(analyticsData.metrics.active_users.change)}%</span>
               <span className="text-sm text-gray-500 ml-1">vs previous period</span>
             </div>
           </div>
-          {renderMiniChart(analyticsData.activeUsers.data)}
+          {renderMiniChart(analyticsData.metrics.active_users.data)}
         </div>
 
         {/* Revenue Card */}
@@ -309,9 +330,9 @@ export default function Analytics() {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">${formatNumber(analyticsData.revenue.current)}</div>
-            <div className={`flex items-center mt-2 ${analyticsData.revenue.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analyticsData.revenue.change >= 0 ? (
+            <div className="text-3xl font-bold text-gray-900">{formatCurrency(analyticsData.metrics.revenue.current)}</div>
+            <div className={`flex items-center mt-2 ${analyticsData.metrics.revenue.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analyticsData.metrics.revenue.change >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
@@ -320,11 +341,11 @@ export default function Analytics() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              <span className="text-sm font-medium">{Math.abs(analyticsData.revenue.change)}%</span>
+              <span className="text-sm font-medium">{Math.abs(analyticsData.metrics.revenue.change)}%</span>
               <span className="text-sm text-gray-500 ml-1">vs previous period</span>
             </div>
           </div>
-          {renderMiniChart(analyticsData.revenue.data)}
+          {renderMiniChart(analyticsData.metrics.revenue.data)}
         </div>
 
         {/* Conversion Rate Card */}
@@ -336,9 +357,9 @@ export default function Analytics() {
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-bold text-gray-900">{analyticsData.conversionRate.current}%</div>
-            <div className={`flex items-center mt-2 ${analyticsData.conversionRate.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analyticsData.conversionRate.change >= 0 ? (
+            <div className="text-3xl font-bold text-gray-900">{analyticsData.metrics.conversion_rate.current}%</div>
+            <div className={`flex items-center mt-2 ${analyticsData.metrics.conversion_rate.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analyticsData.metrics.conversion_rate.change >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
@@ -347,11 +368,11 @@ export default function Analytics() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              <span className="text-sm font-medium">{Math.abs(analyticsData.conversionRate.change)}%</span>
+              <span className="text-sm font-medium">{Math.abs(analyticsData.metrics.conversion_rate.change)}%</span>
               <span className="text-sm text-gray-500 ml-1">vs previous period</span>
             </div>
           </div>
-          {renderMiniChart(analyticsData.conversionRate.data)}
+          {renderMiniChart(analyticsData.metrics.conversion_rate.data)}
         </div>
       </div>
 
@@ -396,16 +417,25 @@ export default function Analytics() {
 
       {/* Additional Data Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Traffic Sources Chart */}
+        {/* Order Status Distribution Chart */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Traffic Sources</h2>
-          <div id="traffic-chart">
-            <ReactApexChart 
-              options={trafficChartOptions} 
-              series={trafficChartSeries} 
-              type="donut" 
-              height={350} 
-            />
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Status Distribution</h2>
+          <div id="order-status-chart">
+            {analyticsData.order_statuses.length > 0 ? (
+              <ReactApexChart 
+                options={orderStatusChartOptions} 
+                series={orderStatusChartSeries} 
+                type="donut" 
+                height={350} 
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="text-center">
+                  <p>No order data available</p>
+                  <p className="text-sm">Orders will appear here once placed</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -413,27 +443,36 @@ export default function Analytics() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Top Performing Products</h2>
           <div className="space-y-4">
-            {analyticsData.topProducts.map((product, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                    <span className="text-blue-600 font-semibold">{index + 1}</span>
+            {analyticsData.top_products.length > 0 ? (
+              analyticsData.top_products.map((product, index) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                      <span className="text-blue-600 font-semibold">{index + 1}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{product.name}</h4>
+                      <p className="text-sm text-gray-500">{product.sales} units sold</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{product.name}</h4>
-                    <p className="text-sm text-gray-500">{product.sales} units sold</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{formatCurrency(product.revenue)}</p>
+                    <p className="text-sm text-gray-500">Revenue</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">${formatNumber(product.revenue)}</p>
-                  <p className="text-sm text-gray-500">Revenue</p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No product sales data available</p>
+                <p className="text-sm">Product sales will appear here once orders are placed</p>
               </div>
-            ))}
+            )}
           </div>
-          <button className="w-full mt-4 text-center text-blue-600 font-medium hover:text-blue-800 py-2">
-            View All Products →
-          </button>
+          {analyticsData.top_products.length > 0 && (
+            <button className="w-full mt-4 text-center text-blue-600 font-medium hover:text-blue-800 py-2">
+              View All Products →
+            </button>
+          )}
         </div>
       </div>
     </div>
