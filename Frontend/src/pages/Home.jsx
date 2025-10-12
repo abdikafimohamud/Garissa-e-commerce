@@ -477,34 +477,34 @@ const Home = ({ addToCart }) => {
 
   return (
     <div className="w-full">
-      {/* Hero Section */}
-      <section className="relative h-screen w-full mb-12">
+   {/* Updated Hero Section with Background Image */}
+      <section className="relative mb-12" style={{ minHeight: '75vh' }}>
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
           }}
         >
-          <div className="absolute inset-0 bg-red bg-opacity-30"></div>
+          <div className="absolute inset-0 bg-black bg-opacity-40"></div>
         </div>
         <div className="relative container mx-auto px-4 h-full flex items-center">
           <div className="max-w-2xl text-white">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">Fashion That Speaks Your Style</h1>
-            <p className="text-xl md:text-2xl mb-8 font-light">Discover the latest trends and exclusive collections for every occasion</p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-10 rounded-full transition duration-300 text-lg">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">Elevate Your Style</h1>
+            <p className="text-xl md:text-2xl mb-8 font-light">Discover curated collections that blend quality, comfort, and contemporary design</p>
+            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <button className="bg-white hover:bg-gray-100 text-gray-900 font-semibold py-4 px-10 rounded-full transition duration-300 text-lg">
                 Shop Collection
               </button>
-              <button className="bg-white hover:bg-gray-100 text-gray-900 font-semibold py-4 px-10 rounded-full transition duration-300 text-lg">
+              <button className="bg-transparent hover:bg-white hover:text-gray-900 text-white font-semibold py-4 px-10 rounded-full transition duration-300 text-lg border border-white">
                 Explore Deals
               </button>
             </div>
-            <div className="mt-10 flex items-center">
-              <div className="flex items-center mr-8">
+            <div className="flex flex-wrap items-center gap-8">
+              <div className="flex items-center">
                 <div className="text-3xl font-bold mr-2">2K+</div>
                 <div className="text-sm">Premium Products</div>
               </div>
-              <div className="flex items-center mr-8">
+              <div className="flex items-center">
                 <div className="text-3xl font-bold mr-2">98%</div>
                 <div className="text-sm">Happy Customers</div>
               </div>
@@ -603,6 +603,8 @@ const Home = ({ addToCart }) => {
         {/* Sports */}
         <CategorySection title="Sports & Fitness" products={sports} addToCart={addToCart} />
       </section>
+
+      
 
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
